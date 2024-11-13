@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "774725142838",
+    "project_id": "unstable-unicorns-2a38e",
+    "storage_bucket": "unstable-unicorns-2a38e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:774725142838:android:263171ac6b8e1fba690b97",
+        "android_client_info": {
+          "package_name": "com.example.unstable_unicorns"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0djpYGxaefi4L6-BXm-5a0g-ijhSJMyc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
