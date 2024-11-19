@@ -44,7 +44,8 @@ class CardModel {
     return CardModel(
       map['name'] as String,
       map['description'] as String,
-      CardClass.values.firstWhere((e) => e.toString().split('.').last == map['type']),      map['imageUrl'] as String,
+      CardClass.values.firstWhere((e) => e.toString().split('.').last == map['type']),
+      map['imageUrl'] as String,
       map['id'] as String,
 
     );

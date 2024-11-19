@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/const/const.dart';
 import 'package:unstable_unicorns/screens/game_board_screen.dart';
 import 'package:unstable_unicorns/services/responsive.dart';
@@ -10,7 +9,6 @@ import 'package:unstable_unicorns/widgets/custom_textfield.dart';
 
 import '../const/colors.dart';
 import '../services/snack_bar.dart';
-import '../widgets/room_data_provider.dart';
 
 class CreateRoom extends StatelessWidget {
   final String email;

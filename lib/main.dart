@@ -5,7 +5,6 @@ import 'package:unstable_unicorns/const/colors.dart';
 import 'package:unstable_unicorns/firebase_options.dart';
 import 'package:unstable_unicorns/screens/signIn_screen.dart';
 import 'package:unstable_unicorns/screens/signUp_screen.dart';
-import 'package:unstable_unicorns/widgets/room_data_provider.dart';
 
 
 
@@ -23,9 +22,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => RoomDataProvider(),
-      child: MaterialApp(
+    return MaterialApp(
             theme: ThemeData.dark().copyWith(scaffoldBackgroundColor: bgColor),
             routes: {
               '/signUp': (context) => const SignUpScreen(),
@@ -33,7 +30,6 @@ class MyApp extends StatelessWidget {
             },
           initialRoute: '/',
           home: const SignInScreen(),
-          ),
     );
   }
 }

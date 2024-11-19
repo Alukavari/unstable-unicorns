@@ -9,12 +9,12 @@ class DialogWindow {
       barrierDismissible: true,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(title, style: textBold),
+          title: Text(title, style: textForDialog, textAlign: TextAlign.center),
           backgroundColor: Colors.white,
           content: SingleChildScrollView(
               child: ListBody(
             children: <Widget>[
-              Text(message, style: textBold),
+              Text(message, style: textForDialog, textAlign: TextAlign.center),
             ],
           )),
           actions: <Widget>[
