@@ -27,13 +27,6 @@ class Game {
       required this.gameState,
       required this.currentPlayerIndex});
 
-  // victoryCondition(List<Card> stall, String playerID) {
-  //   if (stall.length >= 7) {
-  //     playerID.playerWinOrNot = true;
-  //   } else {
-  //     playerID.playerWinOrNot = false;
-  //   }
-
   static Future<void> startGame(
       String roomName, String playerID1, String playerID2) async {
     await FirebaseFirestore.instance.collection(roomName).doc('room').set({
@@ -86,9 +79,24 @@ class Game {
     });
   }
 
-// смена хода
-  static Future<void> passTurn(String roomName) async {
-    final roomRef = FirebaseFirestore.instance.collection(roomName).doc();
+  //get current player
+  static Future<String> currentPlayer (String roomName)async {
+    final roomRef = FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room');
+
+    final roomData = await roomRef.get();
+    if(!roomData.exists || roomData.data()?['currentTurn'] == null){
+      return 'not found';
+    }
+    String currentTurn = roomData.data()?['currentTurn'];
+    return currentTurn;
+    }
+
+// puss turn
+ static Future<void> passTurn(String roomName) async {
+
+    final roomRef = FirebaseFirestore.instance.collection(roomName).doc('room');
     final roomData = await roomRef.get();
 
     if (!roomData.exists || roomData.data()?['players']) ;
@@ -155,15 +163,17 @@ class Game {
     // добавяем малыша на стол
     Random random = Random();
     int babyIndex1 = random.nextInt(babyCards.length);
+    player1CardsOnTable.add(babyCards[babyIndex1]);
     babyCards.removeAt(babyIndex1);
-    int babyIndex2 = random.nextInt(babyCards.length);
 
-    player1CardsOnTable.add(babyDeck[babyIndex1]);
-    player2CardsOnTable.add(babyDeck[babyIndex2]);
+    int babyIndex2 = random.nextInt(babyCards.length);
+    player2CardsOnTable.add(babyCards[babyIndex2]);
+    babyCards.removeAt(babyIndex2);
 
     // Вытаскиваем по 6 случайных карт из основной колоды для каждого игрока
     if (deck.length >= count) {
       for (int i = 0; i < count; i++) {
+
         int randomIndex1 = random.nextInt(deck.length);
         player1CardsOnHand.add(deck[randomIndex1]);
         deck.removeAt(randomIndex1);

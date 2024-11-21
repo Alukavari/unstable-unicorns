@@ -19,18 +19,6 @@ class CreateRoom extends StatelessWidget {
   final TextEditingController _nameRoomController = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
-  // Future<String> createRoom(String userNickname, String roomName) async {
-  //   final room = FirebaseFirestore.instance.collection('games').doc();
-  //   await room.set({
-  //     'roomId': room.id,
-  //     'roomName': roomName,
-  //     'players': [userNickname],
-  //     'gameStatus': 'waiting',
-  //     'currentTurn': userNickname,
-  //     'lastActive': FieldValue.serverTimestamp(),
-  //   });
-  //   return room.id;
-  // }
 
   Future<void> _roomList(BuildContext context) async {
     String nameRoom = _nameRoomController.text;

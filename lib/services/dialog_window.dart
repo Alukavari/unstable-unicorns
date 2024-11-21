@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:unstable_unicorns/const/colors.dart';
 import 'package:unstable_unicorns/const/const.dart';
 
 class DialogWindow {
@@ -12,19 +11,13 @@ class DialogWindow {
           title: Text(title, style: textForDialog, textAlign: TextAlign.center),
           backgroundColor: Colors.white,
           content: SingleChildScrollView(
-              child: ListBody(
-            children: <Widget>[
-              Text(message, style: textForDialog, textAlign: TextAlign.center),
-            ],
-          )),
-          actions: <Widget>[
-            TextButton(
-              child: Center(child: Text('close', style: textBoldUnderline)),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+            child: ListBody(
+              children: <Widget>[
+                Text(message,
+                    style: textForDialog, textAlign: TextAlign.center),
+              ],
             ),
-          ],
+          ),
         );
       },
     );

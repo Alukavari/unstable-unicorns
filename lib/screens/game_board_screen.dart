@@ -65,13 +65,13 @@ class _GameBoardScreenState extends State<GameBoardScreen> {
 
           if (playerReadyList.contains(widget.userNickname)) {
             _isReady = true;
-            print('${playerReadyList.length}');
+            print('playerReadyList ${playerReadyList.length}');
           }
 
           // Проверяем, готовы ли оба игрока начать игру
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_isReady && playerReadyList.length == 2) {
-              print('${playerReadyList.length}');
+              print('playerReadyList 2 ${playerReadyList.length}');
               // Перенаправление на игру
               Navigator.push(
                 context,

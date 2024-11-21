@@ -542,7 +542,7 @@ class Deck {
   }
 
   // get deck
-  static Future<List<CardModel>?> getDeck(String roomName) async {
+  static Future<List<CardModel>?> getDeck(String roomName, String typeDeck) async {
     DocumentSnapshot snapshot = await FirebaseFirestore.instance
         .collection(roomName)
         .doc('room')
@@ -553,8 +553,8 @@ class Deck {
     if (snapshot.exists) {
       Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
 
-      if (data != null && data.containsKey('deck')) {
-        List<dynamic> cardsData = data['deck'];
+      if (data != null && data.containsKey(typeDeck)) {
+        List<dynamic> cardsData = data[typeDeck];
 
         List<CardModel> cards =
             cardsData.map((cardData) => CardModel.fromMap(cardData)).toList();
@@ -588,8 +588,8 @@ class Deck {
     return null; // Если колода не найдена
   }
 
-//update add new card GameState
-  static Future<void> updateWithNewCardGameState(
+//add new card GameState
+  static Future<void> updateWithNewCardGameDeck(
       String roomName, CardModel newCard, String typeDeck) async {
     await FirebaseFirestore.instance
         .collection(roomName)
@@ -601,9 +601,12 @@ class Deck {
     });
   }
 
-  //update add new card PlayerState
-  static Future<void> updateWithNewCardPlayerState(String roomName,
-      CardModel newCard, String typeDeck, String playerID) async {
+  //add new cards PlayerState
+  static Future<void> addCardsPlayerDeck(String roomName,
+      List<CardModel> newCards, String typeDeck, String typeGameDeck, String playerID) async {
+
+    List<Map<String, dynamic>> newCardMaps = newCards.map((card) => card.toMap()).toList();
+
     await FirebaseFirestore.instance
         .collection(roomName)
         .doc('room')
@@ -612,7 +615,45 @@ class Deck {
         .collection('playersState')
         .doc(playerID)
         .update({
-      typeDeck: FieldValue.arrayUnion([newCard.toMap()]),
+      typeDeck: FieldValue.arrayUnion(newCardMaps),
+    });
+
+    await removeCardGameDeck(roomName, newCards, typeGameDeck);
+  }
+
+
+  //remove card from game deck
+  static Future<void> removeCardGameDeck(
+      String roomName, List<CardModel> newCards, String typeDeck) async {
+    List<Map<String, dynamic>> newCardMaps = newCards.map((card) => card.toMap()).toList();
+
+    await FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
+        .collection('GameState')
+        .doc('state')
+        .update({
+      typeDeck: FieldValue.arrayRemove(newCardMaps),
     });
   }
+
+  //remove from playerDeck
+  static Future<void> removeCardFromPlayerDeck(String roomName,
+      List<CardModel> newCards, String typeDeck, String playerID) async {
+
+    List<Map<String, dynamic>> newCardMaps = newCards.map((card) => card.toMap()).toList();
+
+    await FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
+        .collection('GameState')
+        .doc('state')
+        .collection('playersState')
+        .doc(playerID)
+        .update({
+      typeDeck: FieldValue.arrayRemove(newCardMaps),
+    });
+  }
+
+
 }
