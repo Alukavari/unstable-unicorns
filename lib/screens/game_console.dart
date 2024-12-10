@@ -1,14 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:unstable_unicorns/services/dialog_window.dart';
 import 'package:unstable_unicorns/services/snack_bar.dart';
+import 'package:unstable_unicorns/widgets/custom_button_change.dart';
+import 'package:unstable_unicorns/widgets/discard_pile_widget.dart';
+import 'package:unstable_unicorns/widgets/hand_card_widget.dart';
+import 'package:unstable_unicorns/widgets/my_bonuses_fines.dart';
+import 'package:unstable_unicorns/widgets/my_stall_widget.dart';
+import 'package:unstable_unicorns/widgets/other_bonuses_fines.dart';
+import 'package:unstable_unicorns/widgets/scrioll_card.dart';
 import 'package:unstable_unicorns/widgets/scroll_widget.dart';
+import 'package:unstable_unicorns/widgets/other_stall_widget.dart';
 import '../const/const.dart';
 import '../models/card.dart';
 import '../models/deck.dart';
 import '../models/game.dart';
+import '../models/game_state.dart';
+import '../models/player_state.dart';
+import '../services/current_player_provider.dart';
 import '../services/dialog_for_deck.dart';
-import '../widgets/scroll_widget_trim.dart';
+import '../widgets/card_on_table_widget.dart';
+import '../widgets/card_widget.dart';
+import '../widgets/deck_widget.dart';
+import '../widgets/scroll_widget_bonuses.dart';
+import '../widgets/scroll_widget_fines.dart';
 
 class GameConsoleScreen extends StatefulWidget {
   final String playersRoom;
@@ -26,30 +42,39 @@ class GameConsoleScreen extends StatefulWidget {
 
 class _GameConsoleScreenState extends State<GameConsoleScreen> {
   bool isInitialized = false;
-  String otherPlayer = '';
-  String playerID1 = '';
-  String playerID2 = '';
-  List<CardModel> uniDeck = [];
-  List<CardModel> deck = [];
-  String currentPlayer = '';
-  int count = 0;
-  int countTakeCards = 1;
+  bool isPlayerTurn = true;
 
-  Future<void> _getPlayerHashcode(String nameCollection) async {
-    final roomRef = FirebaseFirestore.instance
-        .collection(widget.playersRoom)
-        .doc(nameCollection);
-    final roomData = await roomRef.get();
-    if (!roomData.exists) {
+  String otherPlayer = '';
+  String myID = '';
+  String otherID = '';
+
+  List<CardModel> uniDeck = [];
+  List<CardModel> allDeck = [];
+  String currentPlayer = '';
+  int countTakeCards = 1; //поменяли
+  List<CardModel> discardPile = [];
+  List<CardModel> playingCardOnTable = [];
+
+  Future<void> _getPlayerHashcode() async {
+    final roomRef = FirebaseFirestore.instance.collection(widget.playersRoom);
+
+    final roomData = await roomRef.doc('player1').get();
+
+    final roomData2 = await roomRef.doc('player2').get();
+
+    if (!roomData.exists || !roomData2.exists) {
       return;
     } else {
-      if (roomData.data()?['user_nickname'] == widget.userNickname) {
+      if (roomData.data()?['user_nickname'] == widget.userNickname &&
+          roomData2.data()?['user_nickname'] != widget.userNickname) {
         setState(() {
-          playerID1 = roomData.data()!['playerID'].toString();
+          myID = roomData.data()!['playerID'].toString();
+          otherID = roomData2.data()!['playerID'].toString();
         });
       } else {
         setState(() {
-          playerID2 = roomData.data()!['playerID'].toString();
+          myID = roomData2.data()!['playerID'].toString();
+          otherID = roomData.data()!['playerID'].toString();
         });
       }
     }
@@ -75,40 +100,43 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
   }
 
   Future<void> _initializeGame() async {
-    count++;
-    print("count = $count");
-
     await _getNicknameOpponent();
-    await _getPlayerHashcode('player1');
-    await _getPlayerHashcode('player2');
-    if (otherPlayer.isNotEmpty &&
-        playerID1.isNotEmpty &&
-        playerID2.isNotEmpty ) {
-      await Game.startGame(widget.playersRoom, playerID2, playerID1);
-      await Deck.updateDeck(widget.playersRoom, deck);
-      await Game.drawnCards(
-          widget.playersRoom, context, uniDeck, deck, 5, playerID1, playerID2);
+    await _getPlayerHashcode();
+
+    if (otherPlayer.isNotEmpty && myID.isNotEmpty && otherID.isNotEmpty) {
+      await Game.startGame(widget.playersRoom, otherID, myID);
+      await GameState.updateDeck(widget.playersRoom, allDeck);
+      await PlayerState.drawnCards(widget.playersRoom, context, uniDeck, allDeck, 5, myID, otherID);
       currentPlayer = await Game.currentPlayer(widget.playersRoom);
+
+      print('myID $myID');
+      print('otherID $otherID');
+      print('current Player $currentPlayer');
     }
   }
 
   @override
   void initState() {
     super.initState();
-    deck.addAll(cards);
+    allDeck.addAll(cards);
     uniDeck.addAll(babyDeck);
     _getNicknameOpponent();
+
     if (!isInitialized) {
       _initializeGame();
       isInitialized = true;
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
-    if (playerID2.isEmpty && playerID1.isEmpty) {
+    if (otherID.isEmpty && myID.isEmpty
+        && currentPlayer.isEmpty
+    ) {
       return Container();
     }
+
     return SafeArea(
       child: Scaffold(
         body: Padding(
@@ -118,471 +146,122 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
               children: [
                 Row(
                   children: [
-                    Column(
-                      children: [
-                        const CircleAvatar(
-                          radius: 30,
-                          foregroundImage: AssetImage('assets/suit.png'),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(otherPlayer, style: textBoldWhite),
-                      ],
-                    ),
-                    const SizedBox(width: 20),
                     //stall
-                    if (playerID2.isNotEmpty) ...[
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection(widget.playersRoom)
-                            .doc('room')
-                            .collection('GameState')
-                            .doc('state')
-                            .collection('playersState')
-                            .doc(playerID2)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Container();
-                          } else if (snapshot.hasError) {
-                            return Container();
-                          } else if (!snapshot.hasData ||
-                              !snapshot.data!.exists ||
-                              snapshot.data == null) {
-                            return const CircularProgressIndicator();
-                          } else {
-                            var data =
-                                snapshot.data!.data() as Map<String, dynamic>;
-
-                            var cardList = data['stall'] as List? ?? [];
-                            if (cardList.isEmpty) {
-                              return Container();
+                    Expanded(
+                      child: StallWidget(
+                          otherPlayer: otherPlayer,
+                          otherID: otherID,
+                          roomName: widget.playersRoom),
+                    ),
+                    //button
+                    const SizedBox(height: 10),
+                        StreamBuilder(
+                          stream: FirebaseFirestore.instance
+                              .collection(widget.playersRoom)
+                              .doc('room')
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const CircularProgressIndicator();
                             }
+                            final data = snapshot.data?.data() as Map<String, dynamic>;
 
-                            List<CardModel> cards = cardList.map((cardData) {
-                              return CardModel.fromMap(cardData);
-                            }).toList();
+                            String currentPlayer = data['currentTurn'] ?? '';
 
-                            return Expanded(
-                              child: SizedBox(
-                                height: 170,
-                                child: ScrollWidget(cards: cards),
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              Provider.of<CurrentPlayerState>(context, listen: false).updateCurrentPlayer(currentPlayer);
+                            });
+                            print('получили дату из провайдера $currentPlayer');
+                            // return const SizedBox.shrink();
+                            return Align(
+                              alignment: Alignment.topRight,
+                              child: ButtonChange(
+                                myID: myID,
+                                otherID: otherID,
+                                roomName: widget.playersRoom,
                               ),
                             );
-                            // children: [ScrollWidget(cards: cards)]));
-                          }
-                        },
-                      ),
-                    ],
-                  ],
+                          },
+                        ),
+                      ],
                 ),
-                //fines
                 const SizedBox(height: 10),
+                // other bonuses and fines
                 Row(
                   children: [
-                    Text('fines', style: textBoldWhite),
-                    const SizedBox(width: 10),
-                    if (playerID2.isNotEmpty) ...[
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection(widget.playersRoom)
-                            .doc('room')
-                            .collection('GameState')
-                            .doc('state')
-                            .collection('playersState')
-                            .doc(playerID2)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Container();
-                          } else if (snapshot.hasError) {
-                            return Container();
-                          } else if (!snapshot.hasData ||
-                              !snapshot.data!.exists ||
-                              snapshot.data == null) {
-                            return Container();
-                          } else {
-                            var data =
-                                snapshot.data!.data() as Map<String, dynamic>;
-
-                            var cardList = data['fines'] as List? ?? [];
-                            if (cardList.isEmpty) {
-                              return Container();
-                            }
-
-                            List<CardModel> cards = cardList.map((cardData) {
-                              return CardModel.fromMap(cardData);
-                            }).toList();
-
-                            return Expanded(
-                              child: SizedBox(
-                                height: 40,
-                                child: ScrollWidgetTrim(cards: cards),
-                              ),
-                            );
-                          }
-                        },
+                    Expanded(
+                      child: OtherBonusesFines(
+                          roomName: widget.playersRoom,
+                          otherPlayer: otherPlayer,
+                          otherID: otherID,
+                          myID: myID,
                       ),
-                    ],
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-                //bonuses
-                Row(
-                  children: [
-                    Text('bonuses', style: textBoldWhite),
-                    const SizedBox(width: 10),
-                    if (playerID2.isNotEmpty) ...[
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection(widget.playersRoom)
-                            .doc('room')
-                            .collection('GameState')
-                            .doc('state')
-                            .collection('playersState')
-                            .doc(playerID2)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Container();
-                          } else if (snapshot.hasError) {
-                            return Container();
-                          } else if (!snapshot.hasData ||
-                              snapshot.data == null ||
-                              !snapshot.data!.exists) {
-                            return Container();
-                          } else {
-                            var data =
-                                snapshot.data!.data() as Map<String, dynamic>;
-
-                            var cardList = data['bonuses'] as List? ?? [];
-                            if (cardList.isEmpty) {
-                              return Container();
-                            }
-
-                            List<CardModel> cards = cardList.map((cardData) {
-                              return CardModel.fromMap(cardData);
-                            }).toList();
-
-                            return Expanded(
-                              child: SizedBox(
-                                height: 40,
-                                child: ScrollWidgetTrim(cards: cards),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-                //player board
-                // StreamBuilder<DocumentSnapshot>(
-                //   stream: FirebaseFirestore.instance
-                //       .collection(widget.playersRoom)
-                //       .doc('room')
-                //       .collection('GameState')
-                //       .doc('state')
-                //       .snapshots(),
-                //   builder: (context, snapshot) {
-                //     if (snapshot.connectionState == ConnectionState.waiting) {
-                //       return const CircularProgressIndicator();
-                //     } else if (snapshot.hasError) {
-                //       return Container();
-                //     } else if (!snapshot.hasData ||
-                //         snapshot.data == null ||
-                //         !snapshot.data!.exists) {
-                //       return const CircularProgressIndicator();
-                //     } else {
-                //       var data = snapshot.data!.data() as Map<String, dynamic>;
-                //
-                //       var cardList = data['deck'] as List? ?? [];
-                //       if (cardList.isEmpty) {
-                //         return Container();
-                //       }
-                //       List<CardModel> deck = cardList.map((cardData) {
-                //         return CardModel.fromMap(cardData);
-                //       }).toList();
-                //
-                //
-                //       var cardDiscardPile = data['discardPile'] as List;
-                //       var cardListDiscardPile = data['discardPile'] as List? ?? [];
-                //       if (cardList.isEmpty) {
-                //         return Container();
-                //       }
-                //       List<CardModel> discardPile = cardList.map((cardData) {
-                //         return CardModel.fromMap(cardData);
-                //       }).toList();
-                //
-                //       var dataPlayingCardOnTable = data['playingCardOnTable'] as List? ?? [];
-                //       if (cardList.isEmpty) {
-                //         return Container();
-                //       }
-                //       List<CardModel> playingCardOnTable =
-                //           cardList.map((cardData) {
-                //         return CardModel.fromMap(cardData);
-                //       }).toList();
-                //       return SizedBox(
-                //         height: 170,
-                //         child: Center(
-                //           child: Row(
-                //             children: [
-                //               GestureDetector(
-                //                 onTap: () {
-                //                   DialogForDeck.show(context, countTakeCards, 'Add this card', deck, widget.playersRoom, 'hand', 'deck', currentPlayer);
-                //                 },
-                //                 child: ClipRRect(
-                //                   borderRadius: BorderRadius.circular(10),
-                //                   child: Image.asset('assets/suit.png'),
-                //                 ),
-                //               ),
-                //               const SizedBox(width: 5),
-                //
-                //               // Expanded(
-                //               //   child: Padding(
-                //               //     padding: const EdgeInsets.symmetric(horizontal: 20),
-                //               //     child: Center(
-                //               //       child: Image.asset(''
-                //               //           'assets/1ff.png'),
-                //               //     ),
-                //               //   ),
-                //               // ),
-                //               const SizedBox(width: 5),
-                //
-                //               // SizedBox(
-                //               //   width: 110,
-                //               //   child: GestureDetector(
-                //               //     onTap: () {
-                //               //       DialogForDeck.show(context, countTakeCards, 'choose a card', discardPile, widget.playersRoom, 'hand', 'discardPile', currentPlayer);
-                //               //     },
-                //               //     child: ClipRRect(
-                //               //       borderRadius: BorderRadius.circular(10),
-                //               //       child: Image.asset(discardPile.last.imageUrl),
-                //               //     ),
-                //               //   ),
-                //               // )
-                //             ],
-                //           ),
-                //         ),
-                //       );
-                //     }
-                //   },
-                // ),
-
-                const SizedBox(height: 10),
-// bonuses
-                Row(
-                  children: [
-                    Text('bonuses', style: textBoldWhite),
-                    const SizedBox(width: 10),
-                    if (playerID1.isNotEmpty) ...[
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection(widget.playersRoom)
-                            .doc('room')
-                            .collection('GameState')
-                            .doc('state')
-                            .collection('playersState')
-                            .doc(playerID1)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Container();
-                          } else if (snapshot.hasError) {
-                            return Container();
-                          } else if (!snapshot.hasData ||
-                              snapshot.data == null ||
-                              !snapshot.data!.exists) {
-                            return Container();
-                          } else {
-                            var data =
-                                snapshot.data!.data() as Map<String, dynamic>;
-
-                            var cardList = data['bonuses'] as List? ?? [];
-                            if (cardList.isEmpty) {
-                              return Container();
-                            }
-
-                            List<CardModel> cards = cardList.map((cardData) {
-                              return CardModel.fromMap(cardData);
-                            }).toList();
-
-                            return Expanded(
-                              child: SizedBox(
-                                height: 40,
-                                child: ScrollWidgetTrim(cards: cards),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-
-                const SizedBox(height: 10),
-                //fines
-                Row(
-                  children: [
-                    Text('fines', style: textBoldWhite),
-                    const SizedBox(width: 10),
-                    if (playerID1.isNotEmpty) ...[
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection(widget.playersRoom)
-                            .doc('room')
-                            .collection('GameState')
-                            .doc('state')
-                            .collection('playersState')
-                            .doc(playerID1)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Container();
-                          } else if (snapshot.hasError) {
-                            return Container();
-                          } else if (!snapshot.hasData ||
-                              snapshot.data == null ||
-                              !snapshot.data!.exists) {
-                            return Container();
-                          } else {
-                            var data =
-                                snapshot.data!.data() as Map<String, dynamic>;
-
-                            var cardList = data['fines'] as List? ?? [];
-                            if (cardList.isEmpty) {
-                              return Container();
-                            }
-
-                            List<CardModel> cards = cardList.map((cardData) {
-                              return CardModel.fromMap(cardData);
-                            }).toList();
-
-                            return Expanded(
-                              child: SizedBox(
-                                height: 40,
-                                child: ScrollWidgetTrim(cards: cards),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 10),
-                // stall
-                Row(children: [
-                  Column(
-                    children: [
-                      const CircleAvatar(
-                        radius: 30,
-                        foregroundImage: AssetImage('assets/suit.png'),
-                      ),
-                      const SizedBox(height: 5),
-                      Text('${widget.userNickname}', style: textBoldWhite),
-                    ],
-                  ),
-                  const SizedBox(width: 20),
-                  if (playerID1.isNotEmpty) ...[
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection(widget.playersRoom)
-                          .doc('room')
-                          .collection('GameState')
-                          .doc('state')
-                          .collection('playersState')
-                          .doc(playerID1)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Container();
-                        } else if (snapshot.hasError) {
-                          return Container();
-                        } else if (!snapshot.hasData ||
-                            snapshot.data == null ||
-                            !snapshot.data!.exists) {
-                          return Container();
-                        } else {
-                          var data =
-                              snapshot.data!.data() as Map<String, dynamic>;
-
-                          var cardList = data['stall'] as List? ?? [];
-                          if (cardList.isEmpty) {
-                            return Container();
-                          }
-
-                          List<CardModel> cards = cardList.map((cardData) {
-                            return CardModel.fromMap(cardData);
-                          }).toList();
-
-                          return Expanded(
-                            child: SizedBox(
-                              height: 170,
-                              child: ScrollWidget(cards: cards),
-                            ),
-                          );
-                        }
-                      },
                     ),
                   ],
-                ]),
-
+                ),
+                const SizedBox(height: 10),
+                // playing board
+                Row(
+                  children: [
+                    //deck
+                    BuildDeckWidget(
+                        roomName: widget.playersRoom,
+                        myID: myID,
+                        countTakeCards: countTakeCards),
+                    const SizedBox(width: 10),
+                    //on table
+                    BuildOnTableWidget(
+                        roomName: widget.playersRoom,
+                    ),
+                    const SizedBox(width: 10),
+                    //discard pile
+                    BuildDiscardPileWidget(
+                        roomName: widget.playersRoom,
+                        myID: myID,
+                        countTakeCards: countTakeCards,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                //my bonus and fines
+                Row(
+                  children: [
+                    Expanded(
+                      child: MyBonusesFines(
+                          roomName: widget.playersRoom,
+                          otherPlayer: otherPlayer,
+                          otherID: otherID,
+                          myID: myID,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                //my stall
+                Row(
+                  children: [
+                    Expanded(
+                      child: MyStallWidget(
+                        roomName: widget.playersRoom,
+                        otherPlayer: otherPlayer,
+                          otherID: otherID,
+                          myID: myID,
+                          userNickname: widget.userNickname,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 10),
                 // hand
                 Row(
                   children: [
-                    if (playerID1.isNotEmpty) ...[
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection(widget.playersRoom)
-                            .doc('room')
-                            .collection('GameState')
-                            .doc('state')
-                            .collection('playersState')
-                            .doc(playerID1)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Container();
-                          } else if (snapshot.hasError) {
-                            return Container();
-                          } else if (!snapshot.hasData ||
-                              snapshot.data == null ||
-                              !snapshot.data!.exists) {
-                            return const CircularProgressIndicator();
-                          } else {
-                            var data =
-                                snapshot.data!.data() as Map<String, dynamic>;
-
-                            var cardList = data['hand'] as List? ?? [];
-                            if (cardList.isEmpty) {
-                              return Container();
-                            }
-
-                            List<CardModel> cards = cardList.map((cardData) {
-                              return CardModel.fromMap(cardData);
-                            }).toList();
-
-                            return Expanded(
-                              child: SizedBox(
-                                height: 170,
-                                child: ScrollWidget(cards: cards),
-                              ),
-                            );
-                          }
-                        },
+                    Expanded(
+                      child: HandCardWidget(
+                          roomName: widget.playersRoom,
+                          otherID: otherID,
+                          myID: myID,
                       ),
-                    ],
+                    )
                   ],
                 ),
                 const SizedBox(height: 10),

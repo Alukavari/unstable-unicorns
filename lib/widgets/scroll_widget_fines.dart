@@ -5,10 +5,13 @@ import 'package:unstable_unicorns/const/const.dart';
 import '../models/card.dart';
 import '../services/dialog_window.dart';
 
-class ScrollWidgetTrim extends StatelessWidget {
+class ScrollWidgetFines extends StatelessWidget {
   List<CardModel> cards;
 
-  ScrollWidgetTrim({super.key, required this.cards});
+  ScrollWidgetFines({
+    super.key,
+    required this.cards,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +28,16 @@ class ScrollWidgetTrim extends StatelessWidget {
                   context, cards[index].description, cards[index].name);
             },
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                color: Colors.white,
-                width: 80,
-                height: 30,
-                child: Center(child: Text(cards[index].name, style: textForScroll, textAlign: TextAlign.center)),
-              )
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  color: Colors.white,
+                  width: 80,
+                  height: 30,
+                  child: Center(child: Text(cards[index].name, style: textForScroll, textAlign: TextAlign.center)),
+                )
 
-              ),
             ),
+          ),
         );
       },
     );
