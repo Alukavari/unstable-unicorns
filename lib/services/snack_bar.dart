@@ -14,6 +14,9 @@ class SnackBarService {
       backgroundColor: error ? errorColor : okColor,
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    // ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    });
   }
 }

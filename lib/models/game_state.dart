@@ -2,13 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'card.dart';
 
 class GameState {
-  // List<CardModel> deck = []; // Колода карт
-  // List<CardModel> discardPile = []; // Сброс карт
-  // List<CardModel> playingCardOnTable = [];
-
-
-  //add new card Game deck
-
 
   static Future<void> updateWithNewCardGameDeck(
       String roomName,
@@ -23,6 +16,7 @@ class GameState {
       typeDeck: FieldValue.arrayUnion([newCard.toMap()]),
     });
   }
+
 //добавить целую колоду
   static Future<void> addNewGameDeck(
       String roomName,
@@ -37,10 +31,10 @@ class GameState {
         .collection('GameState')
         .doc('state')
         .update({
-      typeDeck: FieldValue.arrayUnion([newCardMaps]),
+      // typeDeck: FieldValue.arrayUnion([newCardMaps]),
+      typeDeck: FieldValue.arrayUnion(newCardMaps),
     });
   }
-
 
   //remove card from game deck
   static Future<void> removeCardGameDeck(
@@ -62,10 +56,9 @@ class GameState {
 
   static Future<void> removeNewGameDeck(
       String roomName,
-      List<CardModel> newCards,
       String typeDeck) async {
 
-    List<Map<String, dynamic>> newCardMaps = newCards.map((card) => card.toMap()).toList();
+    // List<Map<String, dynamic>> newCardMaps = newCards.map((card) => card.toMap()).toList();
 
     await FirebaseFirestore.instance
         .collection(roomName)
@@ -73,8 +66,8 @@ class GameState {
         .collection('GameState')
         .doc('state')
         .update({
-      typeDeck: FieldValue.arrayUnion([newCardMaps]),
-    });
+      typeDeck: [],
+        });
   }
 
   // Метод для преобразования колоды в список Map для Firestore

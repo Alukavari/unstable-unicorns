@@ -33,7 +33,7 @@ class ScrollWidgetFines extends StatelessWidget {
                   color: Colors.white,
                   width: 80,
                   height: 30,
-                  child: Center(child: Text(cards[index].name, style: textForScroll, textAlign: TextAlign.center)),
+                  child: Center(child: Text(cards[index].name, style: textForFB, textAlign: TextAlign.center)),
                 )
 
             ),

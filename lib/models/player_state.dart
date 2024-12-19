@@ -1,30 +1,21 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:unstable_unicorns/models/deck.dart';
 import 'package:unstable_unicorns/services/dialog_for_TPRU.dart';
 import 'package:unstable_unicorns/services/dialog_whithoutTPRU.dart';
-import '../services/game_data_provider.dart';
+import 'package:unstable_unicorns/services/dialog_window.dart';
+import '../provider/current_player_provider.dart';
+import '../provider/draw_card_provider.dart';
+import '../provider/game_data_provider.dart';
+import 'card.dart';
+import 'card.dart';
 import 'card.dart';
 import 'game.dart';
 import 'game_state.dart';
 
 class PlayerState {
-  String playerId; // ID игрока
-  List<CardModel> hand; // Карты в руке
-  List<CardModel> stall; // карты в стойле
-  List<CardModel> fines; // штрафы на столе
-  List<CardModel> bonuses; // бонусы на столе
-  Map<String, dynamic> effects; // Текущие эффекты или ограничения на игрока
-
-  PlayerState({
-    required this.playerId,
-    required this.hand,
-    required this.effects,
-    required this.stall,
-    required this.fines,
-    required this.bonuses,
-  });
-
   //инициализация состояния игрока
   static Future<void> setPlayerState(String roomName, String playerId) async {
     final playerStateRef = FirebaseFirestore.instance
@@ -74,6 +65,8 @@ class PlayerState {
       String playerID2) async {
     final deck = cards;
 
+    List<CardModel> deckForBD = [];
+
     List<CardModel> babyCards = List.from(babyDeck);
     List<CardModel> player1CardsOnHand = [];
     List<CardModel> player2CardsOnHand = [];
@@ -81,62 +74,110 @@ class PlayerState {
     List<CardModel> player1CardsOnTable = [];
     List<CardModel> player2CardsOnTable = [];
 
-    //добавляем 1 тпру на руки
-    player1CardsOnHand.add(CardModel(
-        'ТПРУ',
-        'Сыграй эту карту, когда любой другой игрок пытается сыграть свою карту: ему придётся сбросить эту карту, не применяя ее эффект',
-        CardClass.tpru,
-        'assets/13tpru.png',
-        '13tpru'));
-    player2CardsOnHand.add(CardModel(
-        'ТПРУ',
-        'Сыграй эту карту, когда любой другой игрок пытается сыграть свою карту: ему придётся сбросить эту карту, не применяя ее эффект',
-        CardClass.tpru,
-        'assets/14tpru.png',
-        '14tpru'));
-
-    // добавяем малыша на стол
     Random random = Random();
 
     int babyIndex1 = random.nextInt(babyCards.length);
     player1CardsOnTable.add(babyCards[babyIndex1]);
     babyCards.removeAt(babyIndex1);
 
+    print('малыш который добавился 1 игроку${player1CardsOnTable[0].id}');
+
     int babyIndex2 = random.nextInt(babyCards.length);
     player2CardsOnTable.add(babyCards[babyIndex2]);
     babyCards.removeAt(babyIndex2);
+    print('малыш который добавился 2 игроку${player2CardsOnTable[0].id}');
 
-    // Вытаскиваем по 6 случайных карт из основной колоды для каждого игрока
     deck.shuffle();
-    if (deck.length >= count) {
+    print('сколько карт всего ${deck.length}');
+    if (deck.length >= count * 2) {
       for (int i = 0; i < count; i++) {
         int randomIndex1 = random.nextInt(deck.length);
-        player1CardsOnHand.add(deck[randomIndex1]);
-        deck.removeAt(randomIndex1);
-
-        int randomIndex2 = random.nextInt(deck.length);
-        player2CardsOnHand.add(deck[randomIndex2]);
-        deck.removeAt(randomIndex2);
+        if (!player1CardsOnHand
+            .any((card) => card.id == deck[randomIndex1].id)) {
+          player1CardsOnHand.add(deck[randomIndex1]);
+          deck.removeAt(randomIndex1);
+        } else {
+          i--;
+        }
       }
-      // обновить колоды в firestore
+      print(
+          'сколько осталось карт в колоде после первой раздачи ${deck.length}');
+      CardModel cardFor1Player =
+          deck.firstWhere((card) => card.type == CardClass.tpru);
+      print('Добавляем карту тпру игрока 1: ${cardFor1Player.id}');
+      player1CardsOnHand.add(cardFor1Player);
+      print(
+          'сколько карт у 1 игрока после добавления тпру ${player1CardsOnHand.length}');
+
+      deck.remove(cardFor1Player);
+      for (var card in deck) {
+        print('ID карты: после удаления ${card.id}');
+      }
+
       try {
-        await GameState.updateDeck(roomName, deck);
         await updatePlayerDeck(
             roomName, player1CardsOnTable, 'stall', playerID1);
+        await updatePlayerDeck(roomName, player1CardsOnHand, 'hand', playerID1);
+      } catch (e) {
+        print('Error in updating decks: $e');
+      }
+
+      for (int i = 0; i < count; i++) {
+        int randomIndex2 = random.nextInt(deck.length);
+        if (!player1CardsOnHand
+                .any((card) => card.id == deck[randomIndex2].id) &&
+            !player2CardsOnHand
+                .any((card) => card.id == deck[randomIndex2].id)) {
+          player2CardsOnHand.add(deck[randomIndex2]);
+          deck.removeAt(randomIndex2);
+        } else {
+          i--; // Если карта уже есть, повторяем итерацию
+        }
+      }
+      print(
+          'сколько осталось карт в колоде после второй раздачи ${deck.length}');
+      CardModel cardFor2Player =
+          deck.firstWhere((card) => card.type == CardClass.tpru);
+      print('какую карту я добавляю 2 игроку ${cardFor2Player.id}');
+
+      print('Добавляем карту игрока 1: ${cardFor2Player.id}');
+      player2CardsOnHand.add(cardFor2Player);
+      print(
+          'сколько карт у 2 игрока после добавления тпру ${player2CardsOnHand.length}');
+      deck.remove(cardFor2Player);
+      print(
+          'сколько осталось карт в колоде после второй раздачи 6 + тпру ${deck.length}');
+
+      try {
         await updatePlayerDeck(
             roomName, player2CardsOnTable, 'stall', playerID2);
-
-        await updatePlayerDeck(roomName, player1CardsOnHand, 'hand', playerID1);
         await updatePlayerDeck(roomName, player2CardsOnHand, 'hand', playerID2);
       } catch (e) {
         print('Error in updating decks: $e');
       }
+      for (int i = 0; i < deck.length; i++) {
+        if (!player1CardsOnHand.any((card) => card.id == deck[i].id) &&
+            !player2CardsOnHand.any((card) => card.id == deck[i].id)) {
+          deckForBD.add(deck[i]);
+          print('какую карту добавляем ${deck[i].id}');
+        }
+      }
+
+      print('сколько уникальных карт в колоде ${deckForBD.length}');
+      // обновить колодe в firestore
+      for (int i = 0; i < deckForBD.length; i++) {
+        print('карты в дек для бд: ${deckForBD[i].id}');
+      }
+      try {
+        await GameState.updateDeck(roomName, deckForBD);
+      } catch (e) {
+        print('Error in updating decks: $e');
+      }
     } else {
-      print('Not enough cards in deck to draw: ${deck.length} available');
+      print('Not enough cards in deck to draw: ${deckForBD.length} available');
     }
   }
 
-  //get player deck fines/effects/bonuses..
   static Future<List<CardModel>?> getPlayerDeck(
       String roomName, String typeDeck, String playerID) async {
     DocumentSnapshot snapshot = await FirebaseFirestore.instance
@@ -163,8 +204,12 @@ class PlayerState {
   }
 
   //add new cards PlayerDeck
-  static Future<void> addCardsPlayerDeck(String roomName, CardModel newCards,
-      String typeDeck, String typeGameDeck, String playerID) async {
+  static Future<void> addCardsPlayerDeck(
+      String roomName,
+      CardModel newCards,
+      String typeDeck,
+      // String typeGameDeck,
+      String playerID) async {
     Map<String, dynamic> newCardMaps = newCards.toMap();
 
     await FirebaseFirestore.instance
@@ -178,7 +223,6 @@ class PlayerState {
       typeDeck: FieldValue.arrayUnion([newCardMaps]),
     });
 
-    await GameState.removeCardGameDeck(roomName, newCards, typeGameDeck);
   }
 
   //remove from playerDeck
@@ -203,105 +247,153 @@ class PlayerState {
   static Future<void> checkTPRU(
     BuildContext context,
     String currentPlayer,
-    List<CardModel> handCards,
-    CardModel newCard,
     String myID,
     String otherID,
     String roomName,
-      // Function(int) checkCount,
-      ) async {
-print('мы перешли на чекТПРУ');
+  ) async {
+    print('мы перешли на чекТПРУ');
 
-    bool hasTpRuCard = handCards.any((card) => card.type == 'tpru');
+// получаем значение разыгрываемой карты
+    CardModel? newCard = await Game.getDrawCard(roomName);
+    print('разыгрываемая карта ${newCard?.name}');
 
-    if (hasTpRuCard) {
-      CardModel tpru = handCards.firstWhere((card) => card.type == 'tpru');
+    List<CardModel> handCards = await PlayerState.getPlayerDeck(
+      roomName,
+      'hand',
+      currentPlayer,
+    ) as List<CardModel>;
 
-      await GameState.updateWithNewCardGameDeck(roomName, tpru, 'playingCardOnTable');
-      await Game.nextPlayer(roomName, currentPlayer, myID, otherID);
+    bool hasTpruCard = handCards.any((card) => card.type == CardClass.tpru);
+    print('проверяем наличие тпру у $currentPlayer и это $hasTpruCard');
 
+    if (hasTpruCard) {
+      print('есть тпру');
+      CardModel tpru =
+          handCards.firstWhere((card) => card.type == CardClass.tpru);
+
+      print('мы на диалоге для тпру');
       await DialogForTPRU.show(
         context,
-        //разыграть тпру
-        () async => await GameState.updateWithNewCardGameDeck(
-          roomName,
-          tpru,
-          'playingCardOnTable',
-        ),
-        //onPressedNextPlayer
-          () async => await Game.nextPlayer(roomName, currentPlayer, myID, otherID),
-
-        // разыгрывет карту
-        () async => await activateCard(
-            newCard,
-            roomName,
-            currentPlayer,
-            // checkCount,
-        ),
-        // onPressedCheckTPRU
-        () async => await checkTPRU(
-          context,
-          currentPlayer,
-          handCards,
-          newCard,
-          myID,
-          otherID,
-          roomName,
-          // checkCount,
-        ),
+        tpru,
+        currentPlayer,
+        myID,
+        otherID,
+        newCard,
+        roomName,
       );
     } else {
       //если отказывается выкладывать тпру
-     await DialogWithoutTPRU.show(
+      print('$currentPlayer отказался выкладывать тпру');
+      await DialogWithoutTPRU.show(
         context,
-        // onPressedNextPlayer,
-         () async => await Game.nextPlayer(roomName, currentPlayer, myID, otherID),
-       () async => await activateCard(
-            newCard,
-            roomName,
-            currentPlayer,
-         // checkCount,
-        ),
+        roomName,
+        myID,
+        otherID,
+        newCard,
       );
     }
   }
 
 
+//разыгрываем функцию карты
   static Future<void> activateCard(
-      CardModel newCard,
-      String roomName,
-      String currentPlayer, // Function(int) checkCount,
+    BuildContext context,
+    CardModel newCard,
+    String roomName,
+    String myID,
+    String otherID,
+  ) async {
+    String currentPlayer =
+        Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer;
 
-      )async{
-    GameDataProvider gameData = GameDataProvider();
+    String otherId = currentPlayer == myID ? otherID : myID;
 
-    print('начинаем разыгрывать карту');
+    final deckCard = await GameState.getDeck(roomName, 'playingCardOnTable');
+    if (deckCard.isNotEmpty) {
+      CardModel? typeCard = CardModel.splitDeckWithType(deckCard);
 
-    await PlayerState.addCardsPlayerDeck(
-        roomName,
-        newCard,
-        'hand',
-        'deck',
-        currentPlayer
-    );
-
-    print('разфграли карту');
-
-//добавили карты со стола в сброс
-    final deckCard = await GameState.getDeck(
-        roomName,
-        'playingCardOnTable'
-    );
-    if(deckCard.isNotEmpty){
-      await GameState.addNewGameDeck(
+      if (typeCard.type == CardClass.unicorn) {
+        await PlayerState.addCardsPlayerDeck(
+            roomName, typeCard, 'stall', currentPlayer);
+        await GameState.removeCardGameDeck(
           roomName,
-          deckCard,
-          'discardPile');
-      print('добавили все в сброс');
+          typeCard,
+          'playingCardOnTable',
+        );
+      } else if (typeCard.type == CardClass.bonus) {
+        await PlayerState.addCardsPlayerDeck(
+            roomName, typeCard, 'bonuses', currentPlayer);
+        await GameState.removeCardGameDeck(
+          roomName,
+          typeCard,
+          'playingCardOnTable',
+        );
+      } else if (typeCard.type == CardClass.fine) {
+        await PlayerState.addCardsPlayerDeck(
+            roomName, typeCard, 'fines', otherId);
+
+        await GameState.removeCardGameDeck(
+          roomName,
+          typeCard,
+          'playingCardOnTable',
+        );
+      }
     }
 
-    gameData.cleanCount();
-    print('обнуяем коунт');
+    print('конец розыгрыша карты на стол');
 
+    await Game.updateDrawCard(
+      roomName,
+      null,
+    );
+
+    Provider.of<DrawCardProvider>(context, listen: false).updateDrawCard(null);
+    print(
+        'разыгырваемая карта теперь должна быть нолль ${Provider.of<DrawCardProvider>(context, listen: false).drawCard}');
+  }
+
+  //забрать карту из сброса на руки
+  static Future<void> takeCardPile(
+    BuildContext context,
+    String roomName,
+    String currentPlayer,
+    String typeGameDeck,
+    String typePlayerDeck,
+    int countTake,
+    String myID,
+    String otherID,
+    CardModel newCards,
+  ) async {
+//добавляем карту в руки игроку
+    await PlayerState.addCardsPlayerDeck(
+      roomName,
+      newCards,
+      'hand',
+      // 'discardPile',
+      currentPlayer,
+    );
+//удаляем карту из колоды сброса
+    await GameState.removeCardGameDeck(
+      roomName,
+      newCards,
+      'discardPile',
+    );
+    await Game.nextPlayer(roomName, currentPlayer, myID, otherID);
+  }
+
+  //проверяем можно ли разыгрывать карту после битвы тпру
+
+  static Future<bool> checkCardOnTableForDraw(String roomName) async {
+    try {
+      List<CardModel> cardOnTable =
+          await GameState.getDeck(roomName, 'playingCardOnTable');
+      print('проверяем четность карт есть ли колода ${cardOnTable.length}');
+
+      int countCard = cardOnTable.length;
+      return countCard % 2 == 0 ? true : false;
+    } catch (e) {
+      print('Error fetching cards from table: $e');
+      return false;
+    }
   }
 }

@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/widgets/scrioll_card.dart';
 import '../models/card.dart';
 import '../models/game.dart';
-import '../services/current_player_provider.dart';
-import '../services/game_data_provider.dart';
+import '../provider/current_player_provider.dart';
+import '../provider/game_data_provider.dart';
 
 class HandCardWidget extends StatelessWidget {
   final String roomName;
@@ -57,7 +57,8 @@ class HandCardWidget extends StatelessWidget {
                     List<CardModel> cards = cardList.map((cardData) {
                       return CardModel.fromMap(cardData);
                     }).toList();
-print('мы на хэнд, перерысовываемся');
+// print('мы на хэнд, перерысовываемся');
+
                     return Expanded(
                       child: SizedBox(
                           height: 170,

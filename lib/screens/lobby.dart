@@ -8,29 +8,17 @@ import 'package:unstable_unicorns/screens/join_room_screen.dart';
 import 'package:unstable_unicorns/services/responsive.dart';
 import 'package:unstable_unicorns/widgets/custom_button.dart';
 import '../const/const.dart';
+import '../models/game.dart';
 import '../services/snack_bar.dart';
 
 class Lobby extends StatelessWidget {
   final String email;
+  final String userCredential;
 
-  Lobby({super.key, required this.email});
+  // Lobby({super.key, required this.userCredential, required this.email});
+  Lobby({required this.email, required this.userCredential});
 
   late String userNickname;
-
-
-  Future<String?> getUserNicknameByEmail(String email) async {
-    var userNickname = '';
-    CollectionReference users = FirebaseFirestore.instance.collection('users');
-    QuerySnapshot querySnapshot =
-        await users.where('email', isEqualTo: email).get();
-    if (querySnapshot.docs.isNotEmpty) {
-      userNickname = querySnapshot.docs.first['userNickname'];
-    } else {
-      SnackBarService.showSnackBar(
-          userNickname as BuildContext, 'Nickname not found...', false);
-    }
-    return userNickname;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +28,7 @@ class Lobby extends StatelessWidget {
         padding: const EdgeInsets.all(10.0),
         child: Center(
           child: FutureBuilder(
-          future: getUserNicknameByEmail(email),
+          future: Game.getUserNicknameByEmail(userCredential),
           builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
@@ -56,25 +44,26 @@ class Lobby extends StatelessWidget {
                   Text('You can Create a Room or Join an existing one.',
                       style: textBold, textAlign: TextAlign.center),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Responsive(
-                        child: Expanded(
+                  Responsive(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Responsive(
+                        Expanded(
                           child: CustomButton(
-                              onPressed: CreateRoom(email: email, userNickname: userNickname,),
+                              onPressed: CreateRoom(userCredential: userCredential, userNickname: userNickname, email: email,),
                               title: 'Create Room'),
                         ),
-                      ),
-                      const SizedBox(width: 5),
-                      Responsive(
-                        child: Expanded(
+                        const SizedBox(width: 5),
+                        // Responsive(
+                        Expanded(
                           child: CustomButton(
-                              onPressed: JoinRoom(email: email, userNickname: userNickname,),
+                              // onPressed: JoinRoom(email: email, userNickname: userNickname,),
+                              onPressed: JoinRoom(userCredential: userCredential, userNickname: userNickname, email: email,),
                               title: 'Join Room'),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pushNamed('/signIn'),

@@ -27,7 +27,7 @@ class ScrollWidget extends StatelessWidget {
                 child: Image.asset(
                   cards![index].imageUrl,
                   fit: BoxFit.cover,
-                  width: 100,
+                  width: 110,
                   height: 170,
                 ),
               ),

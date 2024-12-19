@@ -1,136 +1,68 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/models/player_state.dart';
-import 'package:unstable_unicorns/screens/game_console.dart';
-import '../services/current_player_provider.dart';
-import '../services/game_data_provider.dart';
+import 'package:unstable_unicorns/services/dialog_window.dart';
+import '../provider/current_player_provider.dart';
 import 'card.dart';
 import 'game.dart';
 import 'game_state.dart';
 
 class Player {
-
-  static Future<void> playCard(
-      BuildContext context,
-    String roomName,
-    String currentPlayer,
-    CardModel newCard,
-    String myID,
-    String otherID,
-      // Function(int) checkCount,
-  ) async {
-
-    // String currentPlayer = Provider
-    //     .of<CurrentPlayerState>(context)
-    //     .currentPlayer;
-    final isMyTurn = currentPlayer == myID;
+  static Future<void> playCard(BuildContext context,
+      String roomName,
+      String currentPlayer,
+      String myID,
+      String otherID,) async {
     print('текущий игрок на розыгрыше карт ${currentPlayer}');
+    CardModel? newCard = await Game.getDrawCard(roomName);
+    print('разыгрываемая карта ${newCard?.name}');
 
-    // добавляем карту на стол
-    await GameState.updateWithNewCardGameDeck(
-      roomName,
-      newCard,
+    if (newCard?.type == CardClass.tpru) {
+      print('это тпру карта');
+      DialogWindow.show(
+          context, 'You can\'t play TPRU, choose another card', 'Notification');
+    } else {
+      print('нет не тпру разыгрываем');
+      await GameState.updateWithNewCardGameDeck(
+        roomName,
+        newCard!,
         'playingCardOnTable',
-    );
-    print('добавили карут на стол');
-    await PlayerState.removeCardFromPlayerDeck(
+      );
+      print('добавили карут на стол');
+
+      await PlayerState.removeCardFromPlayerDeck(
         roomName,
         newCard,
         'hand',
         currentPlayer,
-        // Provider
-        //     .of<CurrentPlayerState>(context)
-        //     .currentPlayer
-    );
-    print('удалили на руках');
-
-// меняем текущего игрока
-    await Game.nextPlayer(
-      roomName,
-      currentPlayer,
-      // Provider
-      //     .of<CurrentPlayerState>(context)
-      //     .currentPlayer,
-      myID,
-      otherID,
-    );
-    print('старый текущий игрок ${currentPlayer}');
-
-    // currentPlayer = await Game.currentPlayer(roomName);
-    print('новый текущий игрок currentPlayer ${currentPlayer}');
-
-    List<CardModel> handCards = await PlayerState.getPlayerDeck(roomName, 'hand',currentPlayer,
-    ) as List<CardModel>;
-
-print('мы на тпру');
-print('myID $myID and ${currentPlayer}');
-
-    if( isMyTurn){
-     await PlayerState.checkTPRU(
-          context,
-          currentPlayer,
-       // Provider
-       //     .of<CurrentPlayerState>(context).currentPlayer,
-          handCards,
-          newCard,
-          myID,
-          otherID,
-          roomName,
-          // checkCount,
       );
-    }
-  }
-
-
-  //забрать карту из сброса на руки
-  static Future<void> takeCardPile(
-      BuildContext context,
-      String roomName,
-      String currentPlayer,
-      String typeGameDeck,
-      String typePlayerDeck,
-      int countTake,
-      String myID,
-      String otherID,
-      CardModel newCards,
-      )async {
-//добавляем карту в руки игроку
-    await PlayerState.addCardsPlayerDeck(
-      roomName,
-      newCards,
-      'hand',
-      'discardPile',
-      currentPlayer,
-    );
-//удаляем карту из колоды сброса
-    await GameState.removeCardGameDeck(
-      roomName,
-      newCards,
-      'discardPile',
-    );
-//отправляем уведомление игроку2 о действия игрока1
-    await Game.spentMessage(
-      currentPlayer,
-      roomName,
-      'Selects a card from the discard pile',
-    );
-    // меняем текущего игрока, так как действие хода закончилось
-    await Game.nextPlayer(
+      print('удалили на руках');
+      print('обновили игрока старый текущий игрок ${currentPlayer}');
+      await Game.nextPlayer(
         roomName,
         currentPlayer,
         myID,
-        otherID);
-  }
-    
+        otherID,
+      );
 
+      String newCurrentPlayer = Provider
+          .of<CurrentPlayerState>(context, listen: false)
+          .currentPlayer;
+      print('новый текущий игрок currentPlayer ${newCurrentPlayer}');
 
+      String? userNickname = await Game.getNicknameById(
+        otherID,
+        roomName,
+      );
+      print('получили имя соперника $userNickname');
+      print('меняем статус на чекТПРУ');
+      await Game.changeGameStatus(
+        'checkTPRU',
+        roomName,
+      );
+      if (newCurrentPlayer != myID) {
+        DialogWindow.show(context, 'Player $userNickname makes a move', 'Wait');
       }
-
-
-  //выложить тпру
-//добавить как меняется текущий игрок
-//и добавить отправку уведомления мол игрок отменяет карту
-//передаем право отмены другому игроку, если отмены не было то меняем на другого игрока и продолжаем разыгрывать карту
-//
-
-
+    }
+  }
+}

@@ -2,17 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/models/game_state.dart';
-import 'package:unstable_unicorns/services/current_player_provider.dart';
+import 'package:unstable_unicorns/provider/current_player_provider.dart';
 import '../const/const.dart';
 import '../models/card.dart';
 import '../models/game.dart';
 import '../services/dialog_for_deck.dart';
 import '../services/dialog_window.dart';
-import '../services/game_data_provider.dart';
+import '../provider/game_data_provider.dart';
 
 
 class BuildDeckWidget extends StatefulWidget {
-
   final String roomName;
   final String myID;
   final int countTakeCards;
@@ -32,30 +31,38 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
 
   List<CardModel> _cards = [];
 
-  void _handleTap(BuildContext context,
+  Future<void> _handleTap(BuildContext context,
       List<CardModel> cards,
-      GameDataProvider gameData,
       int countTakeCards,
       String roomName,
-      String currentPlayer,) {
-    if (gameData.actCount <= 1) {
-      print('deck actCount ${gameData.actCount}');
-      DialogForDeck.show(
-          context,
-          countTakeCards,
-          'Add this card',
-          roomName,
-          cards,
-          'hand',
-          'deck',
-          currentPlayer);
-      gameData.incrementActCount();
-      print('сколько каунт сейчас мы в дек виджет ${gameData.actCount}');
-    } else {
-      DialogWindow.show(context,
-          'You have already taken the card', 'Ups..');
+      String currentPlayer,) async {
+
+      if (cards.isNotEmpty) {
+          if (Provider.of<GameDataProvider>(context, listen: false).actCount <= 1) {
+            print('deck actCount в дек виджет через провайдер ${Provider.of<GameDataProvider>(context, listen: false).actCount}');
+            DialogForDeck.show(
+                context,
+                countTakeCards,
+                'Add this card',
+                roomName,
+                cards,
+                'hand',
+                'deck',
+                currentPlayer);
+            await Game.incrementActCount(roomName);
+            // Provider.of<GameDataProvider>(context, listen: false).incrementActCount();
+            // print('сколько каунт сейчас мы в дек виджет через провайдер ${Provider.of<GameDataProvider>(context, listen: false).actCount}');
+          } else {
+            DialogWindow.show(context,
+                'You have already taken the card, change your turn', 'Ups..');
+          }
+      } else {
+        await Game.checkVictoryConditions(
+            widget.roomName,
+            currentPlayer
+        );
+      }
     }
-  }
 
   bool _listEqual(List<CardModel> a, List<CardModel> b) {
     if (a.length != b.length) return false;
@@ -67,7 +74,6 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // final GameDataProvider gameData = GameDataProvider();
 
     return StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
@@ -104,14 +110,12 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
           if (newCards.length != _cards.length ||
               !_listEqual(_cards, newCards)) {
             _cards = newCards;
-            print('перерисовываем дек ${_cards.length}');
           }
 
           return Consumer<CurrentPlayerState>(
               builder: (context, currentPlayerState, child) {
                 final currentPlayer = currentPlayerState.currentPlayer;
                 final isMyTurn = currentPlayer == widget.myID;
-                print('в консьюмер перерисовываем дек');
 
                 return Column(
                   children: [
@@ -125,7 +129,6 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
                             _handleTap(
                                 context,
                                 _cards,
-                                Provider.of<GameDataProvider>(context, listen: false),
                                 widget.countTakeCards,
                                 widget.roomName,
                                 currentPlayer)
@@ -134,7 +137,9 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
                                 context, 'Wait your turn', 'Ups..'),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
-                          child: Image.asset(
+                          child: _cards.isEmpty
+                            ? null
+                          : Image.asset(
                               'assets/suit.png', fit: BoxFit.cover),
                         ),
                       ),

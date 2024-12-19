@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   bool obscureText = true;
+  String userCredential = '';
 
   late final FocusNode passwordFocusNode;
   late final FocusNode emailFocusNode;
@@ -47,6 +49,21 @@ class _SignInScreenState extends State<SignInScreen> {
     });
   }
 
+  Future<String> getUserCredentialByEmail(String email) async {
+    var userCredential = '';
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    QuerySnapshot querySnapshot =
+    // await users.where('email', isEqualTo: email).get();
+    await users.where('email', isEqualTo: email).get();
+    if (querySnapshot.docs.isNotEmpty) {
+      userCredential = querySnapshot.docs.first['playerID'];
+    } else {
+      SnackBarService.showSnackBar(
+          userCredential as BuildContext, 'User credential not found...', false);
+    }
+    return userCredential;
+  }
+
   Future<void> singIn() async {
     final isValid = formKey.currentState!.validate();
     if (!isValid) return;
@@ -55,7 +72,9 @@ class _SignInScreenState extends State<SignInScreen> {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
-      );
+    );
+      userCredential =  await getUserCredentialByEmail(_emailController.text.trim());
+
     } on FirebaseAuthException catch (e) {
       print(e.code);
 
@@ -73,7 +92,8 @@ class _SignInScreenState extends State<SignInScreen> {
         context,
         MaterialPageRoute(
           builder: (context) =>
-              FirebaseStream(email: _emailController.text.trim()),
+              FirebaseStream(email: _emailController.text.trim(), userCredential: userCredential),
+              // FirebaseStream(userCredential: _emailController.text.trim()),
         ),
       );
   }

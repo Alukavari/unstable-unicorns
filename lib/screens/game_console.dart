@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:unstable_unicorns/services/dialog_window.dart';
+import 'package:unstable_unicorns/provider/game_data_provider.dart';
+import 'package:unstable_unicorns/services/dialog_for_finish.dart';
 import 'package:unstable_unicorns/services/snack_bar.dart';
 import 'package:unstable_unicorns/widgets/custom_button_change.dart';
 import 'package:unstable_unicorns/widgets/discard_pile_widget.dart';
@@ -9,22 +10,15 @@ import 'package:unstable_unicorns/widgets/hand_card_widget.dart';
 import 'package:unstable_unicorns/widgets/my_bonuses_fines.dart';
 import 'package:unstable_unicorns/widgets/my_stall_widget.dart';
 import 'package:unstable_unicorns/widgets/other_bonuses_fines.dart';
-import 'package:unstable_unicorns/widgets/scrioll_card.dart';
-import 'package:unstable_unicorns/widgets/scroll_widget.dart';
 import 'package:unstable_unicorns/widgets/other_stall_widget.dart';
-import '../const/const.dart';
 import '../models/card.dart';
 import '../models/deck.dart';
 import '../models/game.dart';
 import '../models/game_state.dart';
 import '../models/player_state.dart';
-import '../services/current_player_provider.dart';
-import '../services/dialog_for_deck.dart';
+import '../provider/current_player_provider.dart';
 import '../widgets/card_on_table_widget.dart';
-import '../widgets/card_widget.dart';
 import '../widgets/deck_widget.dart';
-import '../widgets/scroll_widget_bonuses.dart';
-import '../widgets/scroll_widget_fines.dart';
 
 class GameConsoleScreen extends StatefulWidget {
   final String playersRoom;
@@ -47,6 +41,7 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
   String otherPlayer = '';
   String myID = '';
   String otherID = '';
+  String myEmail = '';
 
   List<CardModel> uniDeck = [];
   List<CardModel> allDeck = [];
@@ -100,19 +95,18 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
   }
 
   Future<void> _initializeGame() async {
+    print('начало инициализации');
     await _getNicknameOpponent();
     await _getPlayerHashcode();
-
     if (otherPlayer.isNotEmpty && myID.isNotEmpty && otherID.isNotEmpty) {
       await Game.startGame(widget.playersRoom, otherID, myID);
       await GameState.updateDeck(widget.playersRoom, allDeck);
-      await PlayerState.drawnCards(widget.playersRoom, context, uniDeck, allDeck, 5, myID, otherID);
+      await PlayerState.drawnCards(
+          widget.playersRoom, context, uniDeck, allDeck, 5, myID, otherID);
       currentPlayer = await Game.currentPlayer(widget.playersRoom);
-
-      print('myID $myID');
-      print('otherID $otherID');
-      print('current Player $currentPlayer');
+      myEmail = await Game.getEmailByID(myID) ?? '';
     }
+    print('конец инициализации');
   }
 
   @override
@@ -128,12 +122,9 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    if (otherID.isEmpty && myID.isEmpty
-        && currentPlayer.isEmpty
-    ) {
+    if (otherID.isEmpty && myID.isEmpty && currentPlayer.isEmpty) {
       return Container();
     }
 
@@ -155,35 +146,109 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                     ),
                     //button
                     const SizedBox(height: 10),
-                        StreamBuilder(
-                          stream: FirebaseFirestore.instance
-                              .collection(widget.playersRoom)
-                              .doc('room')
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const CircularProgressIndicator();
+                    StreamBuilder(
+                        stream: FirebaseFirestore.instance
+                            .collection(widget.playersRoom)
+                            .doc('room')
+                            .collection('action')
+                            .doc('state')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          // if(snapshot.hasError){
+                          //   print('ошибка в стриме с аксткаунт');
+                          //   return const SizedBox.shrink();
+                          // }
+                          // if (!snapshot.hasData) {
+                          //   return const SizedBox.shrink();
+                          // }
+
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          } else if (snapshot.hasError) {
+                            print('Error: ${snapshot.error}');
+                            return const SizedBox.shrink();
+                          } else if (!snapshot.hasData ||
+                              snapshot.data == null ||
+                              !snapshot.data!.exists) {
+                            return const SizedBox.shrink();
+                          }
+                          final data =
+                              snapshot.data?.data() as Map<String, dynamic>;
+
+                          int actCount = data['actCount'] ?? 0;
+                          print('actCount $actCount');
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Provider.of<GameDataProvider>(context,
+                                listen: false)
+                                .updateActCount(actCount);
+                          });
+                          return const SizedBox.shrink();
+                        }),
+
+                    StreamBuilder(
+                        stream: FirebaseFirestore.instance
+                            .collection(widget.playersRoom)
+                            .doc('room')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const CircularProgressIndicator();
+                          }
+                          final data =
+                              snapshot.data?.data() as Map<String, dynamic>;
+
+                          String currentPlayer = data['currentTurn'] ?? '';
+                          String gameStatus = data['gameStatus'];
+                          String gameWin = data['gameWin'];
+                          bool isEven = gameWin.isNotEmpty ? true : false;
+                          print('победитель $gameWin');
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Provider.of<CurrentPlayerState>(context,
+                                    listen: false)
+                                .updateCurrentPlayer(currentPlayer);
+                          });
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (gameStatus == 'checkTPRU' &&
+                                currentPlayer == myID) {
+                              PlayerState.checkTPRU(
+                                context,
+                                currentPlayer,
+                                myID,
+                                otherID,
+                                widget.playersRoom,
+                              );
+                            } else {
+                              String? gameWinner = myID == gameWin
+                                  ? widget.userNickname
+                                  : otherPlayer;
+                              if (gameStatus == 'finished') {
+                                DialogForFinish.show(
+                                  context,
+                                  isEven
+                                      ? 'Winner $gameWinner,would you like to play again? '
+                                      : 'No winner found, would you like to play again?',
+                                  'Game over',
+                                  myEmail,
+                                  myID,
+                                  widget.playersRoom,
+                                );
+                              }
                             }
-                            final data = snapshot.data?.data() as Map<String, dynamic>;
-
-                            String currentPlayer = data['currentTurn'] ?? '';
-
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              Provider.of<CurrentPlayerState>(context, listen: false).updateCurrentPlayer(currentPlayer);
-                            });
-                            print('получили дату из провайдера $currentPlayer');
-                            // return const SizedBox.shrink();
-                            return Align(
-                              alignment: Alignment.topRight,
-                              child: ButtonChange(
-                                myID: myID,
-                                otherID: otherID,
-                                roomName: widget.playersRoom,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                          });
+                          print('получили дату из провайдера $currentPlayer');
+                          return Align(
+                            alignment: Alignment.topRight,
+                            child: ButtonChange(
+                              myID: myID,
+                              otherID: otherID,
+                              roomName: widget.playersRoom,
+                            ),
+                          );
+                        }),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 // other bonuses and fines
@@ -191,10 +256,10 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                   children: [
                     Expanded(
                       child: OtherBonusesFines(
-                          roomName: widget.playersRoom,
-                          otherPlayer: otherPlayer,
-                          otherID: otherID,
-                          myID: myID,
+                        roomName: widget.playersRoom,
+                        otherPlayer: otherPlayer,
+                        otherID: otherID,
+                        myID: myID,
                       ),
                     ),
                   ],
@@ -210,28 +275,36 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                         countTakeCards: countTakeCards),
                     const SizedBox(width: 10),
                     //on table
-                    BuildOnTableWidget(
+                    Expanded(
+                      child: BuildOnTableWidget(
                         roomName: widget.playersRoom,
+                        // ),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     //discard pile
-                    BuildDiscardPileWidget(
+                    SizedBox(
+                      width: 110,
+                      height: 170,
+                      child: BuildDiscardPileWidget(
                         roomName: widget.playersRoom,
                         myID: myID,
                         countTakeCards: countTakeCards,
+                      ),
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 10),
                 //my bonus and fines
                 Row(
                   children: [
                     Expanded(
                       child: MyBonusesFines(
-                          roomName: widget.playersRoom,
-                          otherPlayer: otherPlayer,
-                          otherID: otherID,
-                          myID: myID,
+                        roomName: widget.playersRoom,
+                        otherPlayer: otherPlayer,
+                        otherID: otherID,
+                        myID: myID,
                       ),
                     ),
                   ],
@@ -244,9 +317,9 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                       child: MyStallWidget(
                         roomName: widget.playersRoom,
                         otherPlayer: otherPlayer,
-                          otherID: otherID,
-                          myID: myID,
-                          userNickname: widget.userNickname,
+                        otherID: otherID,
+                        myID: myID,
+                        userNickname: widget.userNickname,
                       ),
                     ),
                   ],
@@ -257,9 +330,9 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                   children: [
                     Expanded(
                       child: HandCardWidget(
-                          roomName: widget.playersRoom,
-                          otherID: otherID,
-                          myID: myID,
+                        roomName: widget.playersRoom,
+                        otherID: otherID,
+                        myID: myID,
                       ),
                     )
                   ],

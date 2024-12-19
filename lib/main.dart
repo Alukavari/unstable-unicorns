@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/const/colors.dart';
 import 'package:unstable_unicorns/firebase_options.dart';
+import 'package:unstable_unicorns/screens/lobby.dart';
 import 'package:unstable_unicorns/screens/signIn_screen.dart';
 import 'package:unstable_unicorns/screens/signUp_screen.dart';
-import 'package:unstable_unicorns/services/current_player_provider.dart';
-import 'package:unstable_unicorns/services/game_data_provider.dart';
+import 'package:unstable_unicorns/provider/current_player_provider.dart';
+import 'package:unstable_unicorns/provider/discard_card_provider.dart';
+import 'package:unstable_unicorns/provider/draw_card_provider.dart';
+import 'package:unstable_unicorns/provider/game_data_provider.dart';
 
 import 'models/game_state.dart';
 
@@ -21,6 +24,8 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => CurrentPlayerState()),
         ChangeNotifierProvider(create: (context) => GameDataProvider()),
+        ChangeNotifierProvider(create: (context) => DrawCardProvider()),
+        ChangeNotifierProvider(create: (context) => DiscardCardProvider()),
   ],
           child: const MyApp()
     ),

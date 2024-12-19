@@ -14,15 +14,20 @@ import '../services/snack_bar.dart';
 
 class JoinRoom extends StatelessWidget {
   final String email;
+  final String userCredential;
   final String userNickname;
 
-  JoinRoom({super.key, required this.email, required this.userNickname});
+  // JoinRoom({super.key, required this.email, required this.userNickname});
+  JoinRoom({super.key, required this.userCredential, required this.userNickname, required this.email});
 
   List<Map<String, dynamic>> rooms = [];
   FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   Future<void> _addUser(
-      BuildContext context, String roomName, String deleteNameRoom) async {
+      BuildContext context,
+      String roomName,
+      String deleteNameRoom
+      ) async {
     final playerRef = firestore.collection(roomName);
     final QuerySnapshot snapshot = await playerRef.get();
     int playerCount = snapshot.docs.length;
@@ -39,11 +44,12 @@ class JoinRoom extends StatelessWidget {
         CollectionReference playersRoom =
             FirebaseFirestore.instance.collection(roomName);
         await playersRoom.doc('player2').set({
-          'playerID': email.hashCode,
+          'playerID': userCredential,
           'email': email,
           'user_nickname': userNickname,
-        });
+          'isConnected': true,
 
+        });
         playerCount++;
 
         if (playerCount == 2) {
@@ -72,7 +78,8 @@ class JoinRoom extends StatelessWidget {
           'There are already 2 players, select another room or create your own',
           true);
       Navigator.push(context,
-          MaterialPageRoute(builder: (context) => Lobby(email: email)));
+          // MaterialPageRoute(builder: (context) => Lobby(email: email)));
+          MaterialPageRoute(builder: (context) => Lobby(userCredential: userCredential, email: email,)));
     }
   }
 
@@ -102,40 +109,46 @@ class JoinRoom extends StatelessWidget {
                     } else {
                       rooms = snapshot.data?.docs.map((doc) {
                             return {
-                              'user_nickname':
-                                  doc['user_nickname'] ?? 'Unknown User',
+                              'user_nickname': doc['user_nickname'] ?? 'Unknown User',
                               'name_room': doc['name_room'] ?? 'Unnamed Room',
                               'email': doc['email'] ?? 'Unnamed Email',
+                              'playerID': doc['playerID'] ?? 'Unknown ID',
                             };
                           }).toList() ??
                           [];
                       return Responsive(
-                        child: Expanded(
-                          child: Column(
-                            children: rooms.map<Widget>((room) {
-                              return ListTile(
-                                title: Text(
-                                  room['user_nickname'] ?? [],
-                                  style: textBold,
-                                ),
-                                subtitle: Expanded(
-                                  child: ElevatedButton(
-                                      onPressed: () => _addUser(
-                                          context,
-                                          '${room['user_nickname']}_${room['name_room']}',
-                                          room['email']),
-                                      style: ElevatedButton.styleFrom(
-                                          foregroundColor: bgColor,
-                                          backgroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(10))),
-                                      child: Text('${room['name_room']}',
-                                          style: textBold)),
-                                ),
-                              );
-                            }).toList(),
-                          ),
+                        // child: Expanded(
+                        child: Column(
+                          children: rooms.map<Widget>((room) {
+                            // return Expanded(
+                            return ListTile(
+                              title: Text(
+                                room['user_nickname'] ?? [],
+                                style: textBold,
+                              ),
+                              // subtitle: Expanded(
+                              subtitle: Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                        onPressed: () => _addUser(
+                                            context,
+                                            '${room['user_nickname']}_${room['name_room']}',
+                                            // '${room['user_nickname']}_${room['name_room']}_${room['playerID']}',
+                                            room['playerID']),
+                                        style: ElevatedButton.styleFrom(
+                                            foregroundColor: bgColor,
+                                            backgroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10))),
+                                        child: Text('${room['name_room']}',
+                                            style: textBold)),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ),
                       );
                     }
@@ -146,7 +159,8 @@ class JoinRoom extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: CustomButton(
-                      onPressed: Lobby(email: email), title: 'Exit to Lobby'),
+                      // onPressed: Lobby(email: email), title: 'Exit to Lobby'),
+                      onPressed: Lobby(userCredential: userCredential, email: email,), title: 'Exit to Lobby'),
                 ),
                 const SizedBox(height: 20),
               ],

@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../const/const.dart';
 import '../models/card.dart';
-import '../services/current_player_provider.dart';
-import '../services/game_data_provider.dart';
+import '../provider/current_player_provider.dart';
+import '../provider/game_data_provider.dart';
 import 'card_widget.dart';
 
 class BuildOnTableWidget extends StatelessWidget {
@@ -60,19 +60,16 @@ class BuildOnTableWidget extends StatelessWidget {
           List<CardModel> cardsOnTable = dataOnTable.map((cardData) {
             return CardModel.fromMap(cardData);
           }).toList();
-          print('playingCardOnTable мы на стримбилде ${cardsOnTable.length}');
+          // print('playingCardOnTable мы на стримбилде ${cardsOnTable.length}');
 
-          if (cardsOnTable.length == _cards.length) {
-            return const SizedBox.shrink();
-          }
           if (_cards.length != cardsOnTable.length || !_listEqual(_cards,cardsOnTable)) {
             _cards = cardsOnTable;
-            print('перерисовываем карты на столе _cards $_cards');
+            print('перерисовываем карты на столе _cards ${_cards.length}');
 
-            return Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                height: 170,
+            // return Expanded(
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              height: 170,
                 child: Stack(
                   children: _cards.isNotEmpty
                       ? _cards
@@ -88,8 +85,7 @@ class BuildOnTableWidget extends StatelessWidget {
                   }).toList()
                       : [const SizedBox.shrink()],
                 ),
-              ),
-            );
+              );
           }
           return const SizedBox.shrink();
         }

@@ -41,14 +41,6 @@ class DialogForDeck {
               ),
             ),
           ),
-          // actions: <Widget>[
-          //   TextButton(
-          //     onPressed: () {
-          //       Navigator.of(context).pop(); // Закрытие диалога
-          //     },
-          //     child: Text('add', style: textForDialog),
-          //   ),
-          // ],
         );
       },
     );

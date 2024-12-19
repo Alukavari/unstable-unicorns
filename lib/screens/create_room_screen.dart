@@ -12,9 +12,10 @@ import '../services/snack_bar.dart';
 
 class CreateRoom extends StatelessWidget {
   final String email;
+  final String userCredential;
   final String userNickname;
 
-  CreateRoom({super.key, required this.email, required this.userNickname});
+  CreateRoom({super.key, required this.userCredential, required this.userNickname, required this.email});
 
   final TextEditingController _nameRoomController = TextEditingController();
   final formKey = GlobalKey<FormState>();
@@ -29,21 +30,27 @@ class CreateRoom extends StatelessWidget {
     try {
       CollectionReference _firestore =
           FirebaseFirestore.instance.collection('user room');
-      await _firestore.doc(email).set({
+      // await _firestore.doc().set({
+      await _firestore.doc(userCredential).set({
         'email': email,
         'user_nickname': userNickname,
         'name_room': nameRoom,
+        'playerID': userCredential,
+
       });
 
       // create room for 2 players
       final roomRef = FirebaseFirestore.instance
           .collection('${userNickname}_$nameRoom')
+          // .collection('${userNickname}_${nameRoom}_$userCredential')
           .doc('player1');
       await roomRef.set({
-        'playerID': email.hashCode,
+        'playerID': userCredential,
         'email': email,
         'user_nickname': userNickname,
         'name_room': nameRoom,
+        'isConnected': true,
+
       });
 
     } on FirebaseAuthException catch (e) {

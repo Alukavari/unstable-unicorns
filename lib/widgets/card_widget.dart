@@ -25,7 +25,7 @@ class CardWidget extends StatelessWidget {
           child: Image.asset(
             card.imageUrl,
             fit: BoxFit.cover,
-            width: 100,
+            width: 110,
             height: 170,
           ),
         ),

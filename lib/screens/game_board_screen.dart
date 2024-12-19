@@ -1,11 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:unstable_unicorns/screens/join_room_screen.dart';
-import 'package:unstable_unicorns/services/snack_bar.dart';
-
 import '../const/const.dart';
 import 'game_console.dart';
-import 'lobby.dart';
 
 class GameBoardScreen extends StatefulWidget {
   final String playersRoom;
@@ -47,7 +43,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> {
         stream: gameStatusRef.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Text('Error: ${snapshot.error}');
@@ -59,7 +55,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> {
           // Получаем статус готовности двух игроков
           final data = snapshot.data?.data() as Map<String, dynamic>;
           if (!data.containsKey('playerReady')) {
-            return Center(child: Text('No players ready status found'));
+            return const Center(child: Text('No players ready status found'));
           }
           final playerReadyList = data['playerReady'] as List;
 

@@ -22,8 +22,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _nicknameController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   bool obscureText = true;
-
-
+  String  userCredentialString = '';
 
    Future<void>signUp() async {
     final isValid = formKey.currentState!.validate();
@@ -35,10 +34,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
               email: _emailController.text.trim(),
               password: _passwordController.text.trim());
 
+
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'userID': userCredential.user!.uid,
+      // await FirebaseFirestore.instance.collection('users').doc(_emailController.text.trim()).set({
+        'playerID': userCredential.user!.uid,
         'userNickname': _nicknameController.text.trim(),
         'email': _emailController.text.trim(),
+      });
+      setState(() {
+        userCredentialString = userCredential.user!.uid.toString();
+
       });
 
     } on FirebaseAuthException catch (e) {
@@ -62,7 +67,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       context,
       MaterialPageRoute(
         builder: (context) =>
-            Lobby(email: _emailController.text.trim()),
+            // Lobby(email: _emailController.text.trim()),
+            Lobby(
+              email: _emailController.text.trim(),
+              userCredential: userCredentialString,
+
+            ),
       ),
     );
   }
@@ -116,7 +126,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: obscureText,
