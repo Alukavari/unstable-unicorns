@@ -1,8 +1,17 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:unstable_unicorns/models/game_state.dart';
+import 'package:unstable_unicorns/models/player_state.dart';
+import 'package:unstable_unicorns/provider/check_progress_provider.dart';
+import 'package:unstable_unicorns/provider/current_player_provider.dart';
+import 'package:unstable_unicorns/provider/discard_card_provider.dart';
+import 'package:unstable_unicorns/provider/game_data_provider.dart';
+import 'package:unstable_unicorns/widgets/scroll_for_game.dart';
 
 import 'deck.dart';
+import 'game.dart';
 
 enum CardClass {
   bonus,
@@ -29,14 +38,6 @@ class CardModel {
       this.id,
       );
 
-  // @override
-  // bool operator ==(Object other) {
-  //   if (identical(this, other)) return true;
-  //   return other is CardModel && other.id == id; // Сравниваем по id
-  // }
-  //
-  // @override
-  // int get hashCode => id.hashCode; // Используем id для хеширования
 
   // Метод для преобразования карточки в Map для Firestore
   Map<String, dynamic> toMap() {
@@ -58,38 +59,62 @@ class CardModel {
       CardClass.values.firstWhere((e) => e.toString().split('.').last == map['type']),
       map['imageUrl'] as String,
       map['id'] as String,
-
     );
   }
 
+  
+  static Future<void> drawnUnicorn(
+      BuildContext context,
+      String roomName,
+      CardModel? card,
+      String myID,
+      String otherID,
 
-  static List<CardModel> splitDeckWithoutType (List<CardModel> deck) {
-    List<CardClass> desiredTypes = [
-      CardClass.unicorn,
-      CardClass.bonus,
-      CardClass.spell,
-      CardClass.fine,
-    ];
+      )async{
+    // if(card?.name == 'ЛАМАРОГ'){
+      print('мы в ламароге разыгрываемся');
+      await Game.changeGameStatus('drawnLamarog', roomName);
+      String currentPlayer = Provider.of<CurrentPlayerState>(context, listen:false).currentPlayer;
+      await PlayerState.addCardsPlayerDeck(roomName, card!, 'stall', currentPlayer);
+    await GameState.removeCardGameDeck(roomName, card!, 'playingCardOnTable');
 
-    List<CardModel> remainingCards = deck.where((card) =>
-    !desiredTypes.contains(card.type)).toList();
-    return remainingCards;
+      if (Provider.of<ProgressCheckProvider>(context, listen: false).check == 2
+      ){
+        await Game.changeGameStatus('inProcess', roomName);
+        print('карат разыграна, в ламароге на финале');
+await Game.updateCardAction(roomName, 0);
+print('сколько в картах активности обнуления');
+
+// await Game.cleanActCount(roomName);
+      }
   }
 
+  static Future<void> drawnSpell(
+      BuildContext context,
+      String roomName,
+      CardModel? card,
+      String myID,
+      String otherID,
 
-  static CardModel splitDeckWithType (List<CardModel> deck) {
-    List<CardClass> desiredTypes = [
-      CardClass.unicorn,
-      CardClass.bonus,
-      CardClass.fine,
-      CardClass.spell,
-    ];
+      )async{}
 
-    CardModel withFilter = deck.firstWhere((card) =>
-    desiredTypes.contains(card.type));
+  static Future<void> drawnFins(
+      BuildContext context,
+      String roomName,
+      CardModel? card,
+      String myID,
+      String otherID,
 
-    return withFilter;
-  }
+      )async{}
+
+  static Future<void> drawnBonuses(
+      BuildContext context,
+      String roomName,
+      CardModel? card,
+      String myID,
+      String otherID,
+
+      )async{}
 
 
 }

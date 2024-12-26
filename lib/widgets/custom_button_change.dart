@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:unstable_unicorns/provider/check_progress_provider.dart';
 import 'package:unstable_unicorns/services/dialog_window.dart';
 import 'package:unstable_unicorns/provider/game_data_provider.dart';
+import 'package:unstable_unicorns/services/snack_bar.dart';
 import '../const/colors.dart';
 import '../const/const.dart';
 import '../models/game.dart';
@@ -36,6 +38,9 @@ class _ButtonChangeState extends State<ButtonChange> {
 
     print('мы на кнопке, должно быть либо 2,3 $count');
 
+    if (
+    Provider.of<ProgressCheckProvider>(context, listen: false).check == 0
+    ){
     bool isEven = Provider.of<GameDataProvider>(context, listen: false).actCount >= 2
         ? true
         : false;
@@ -49,10 +54,6 @@ class _ButtonChangeState extends State<ButtonChange> {
         widget.myID,
         widget.otherID,
       );
-      // await Game.checkVictoryConditions(
-      //     widget.roomName,
-      //     currentPlayer
-      // );
 
     } else{
       DialogWindow.show(
@@ -61,26 +62,10 @@ class _ButtonChangeState extends State<ButtonChange> {
         'Notification',
       );
     }
-    // isEven
-    //     ? await Game.checkCountCardOnHand(
-    //     context,
-    //     widget.roomName,
-    //     'hand',
-    //     currentPlayer,
-    //     widget.myID,
-    //     widget.otherID,
-    // )
-    //     : DialogWindow.show(
-    //         context,
-    //         'You didn\'t make a move',
-    //         'Notification',
-    //       );
-    // //
-    // await Game.checkVictoryConditions(
-    //     widget.roomName,
-    //     currentPlayer
-    // );
-  }
+  } else {
+      DialogWindow.show(context, 'Wait, your opponent has not yet implemented the card action', 'Notification');
+    }
+    }
 
   @override
   void didChangeDependencies() {

@@ -208,7 +208,6 @@ class PlayerState {
       String roomName,
       CardModel newCards,
       String typeDeck,
-      // String typeGameDeck,
       String playerID) async {
     Map<String, dynamic> newCardMaps = newCards.toMap();
 
@@ -244,114 +243,7 @@ class PlayerState {
   }
 
 //проверяем на наличие ТПРУ
-  static Future<void> checkTPRU(
-    BuildContext context,
-    String currentPlayer,
-    String myID,
-    String otherID,
-    String roomName,
-  ) async {
-    print('мы перешли на чекТПРУ');
-
-// получаем значение разыгрываемой карты
-    CardModel? newCard = await Game.getDrawCard(roomName);
-    print('разыгрываемая карта ${newCard?.name}');
-
-    List<CardModel> handCards = await PlayerState.getPlayerDeck(
-      roomName,
-      'hand',
-      currentPlayer,
-    ) as List<CardModel>;
-
-    bool hasTpruCard = handCards.any((card) => card.type == CardClass.tpru);
-    print('проверяем наличие тпру у $currentPlayer и это $hasTpruCard');
-
-    if (hasTpruCard) {
-      print('есть тпру');
-      CardModel tpru =
-          handCards.firstWhere((card) => card.type == CardClass.tpru);
-
-      print('мы на диалоге для тпру');
-      await DialogForTPRU.show(
-        context,
-        tpru,
-        currentPlayer,
-        myID,
-        otherID,
-        newCard,
-        roomName,
-      );
-    } else {
-      //если отказывается выкладывать тпру
-      print('$currentPlayer отказался выкладывать тпру');
-      await DialogWithoutTPRU.show(
-        context,
-        roomName,
-        myID,
-        otherID,
-        newCard,
-      );
-    }
-  }
-
-
-//разыгрываем функцию карты
-  static Future<void> activateCard(
-    BuildContext context,
-    CardModel newCard,
-    String roomName,
-    String myID,
-    String otherID,
-  ) async {
-    String currentPlayer =
-        Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer;
-
-    String otherId = currentPlayer == myID ? otherID : myID;
-
-    final deckCard = await GameState.getDeck(roomName, 'playingCardOnTable');
-    if (deckCard.isNotEmpty) {
-      CardModel? typeCard = CardModel.splitDeckWithType(deckCard);
-
-      if (typeCard.type == CardClass.unicorn) {
-        await PlayerState.addCardsPlayerDeck(
-            roomName, typeCard, 'stall', currentPlayer);
-        await GameState.removeCardGameDeck(
-          roomName,
-          typeCard,
-          'playingCardOnTable',
-        );
-      } else if (typeCard.type == CardClass.bonus) {
-        await PlayerState.addCardsPlayerDeck(
-            roomName, typeCard, 'bonuses', currentPlayer);
-        await GameState.removeCardGameDeck(
-          roomName,
-          typeCard,
-          'playingCardOnTable',
-        );
-      } else if (typeCard.type == CardClass.fine) {
-        await PlayerState.addCardsPlayerDeck(
-            roomName, typeCard, 'fines', otherId);
-
-        await GameState.removeCardGameDeck(
-          roomName,
-          typeCard,
-          'playingCardOnTable',
-        );
-      }
-    }
-
-    print('конец розыгрыша карты на стол');
-
-    await Game.updateDrawCard(
-      roomName,
-      null,
-    );
-
-    Provider.of<DrawCardProvider>(context, listen: false).updateDrawCard(null);
-    print(
-        'разыгырваемая карта теперь должна быть нолль ${Provider.of<DrawCardProvider>(context, listen: false).drawCard}');
-  }
-
+//
   //забрать карту из сброса на руки
   static Future<void> takeCardPile(
     BuildContext context,
@@ -381,19 +273,4 @@ class PlayerState {
     await Game.nextPlayer(roomName, currentPlayer, myID, otherID);
   }
 
-  //проверяем можно ли разыгрывать карту после битвы тпру
-
-  static Future<bool> checkCardOnTableForDraw(String roomName) async {
-    try {
-      List<CardModel> cardOnTable =
-          await GameState.getDeck(roomName, 'playingCardOnTable');
-      print('проверяем четность карт есть ли колода ${cardOnTable.length}');
-
-      int countCard = cardOnTable.length;
-      return countCard % 2 == 0 ? true : false;
-    } catch (e) {
-      print('Error fetching cards from table: $e');
-      return false;
-    }
-  }
 }

@@ -7,6 +7,7 @@ import '../models/deck.dart';
 import '../models/game_state.dart';
 import '../models/player_state.dart';
 import '../provider/game_data_provider.dart';
+import '../services/snack_bar.dart';
 
 class ScrollWidgetForDeck extends StatefulWidget {
   String roomName;
@@ -50,8 +51,8 @@ class _ScrollWidgetForDeckState extends State<ScrollWidgetForDeck> {
     }
     if (widget.gameDeck!.length < widget.count) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        DialogWindow.show(context,
-            'Игра окончена, недостаточно карт для данного действия', 'Upps..');
+
+        DialogWindow.show(context, 'Игра окончена, недостаточно карт для данного действия', 'Upps..');
       });
       return const SizedBox.shrink();
     }
@@ -77,7 +78,6 @@ class _ScrollWidgetForDeckState extends State<ScrollWidgetForDeck> {
                     widget.roomName,
                     selectedDeck[index],
                     widget.typeDeck,
-                    // widget.typeGameDeck,
                     widget.playerID);
                 await GameState.removeCardGameDeck(
                   widget.roomName,
@@ -85,7 +85,6 @@ class _ScrollWidgetForDeckState extends State<ScrollWidgetForDeck> {
                   widget.typeGameDeck,
                 );
                 selectedDeck.removeAt(index);
-                // print('selectedDeck: ${selectedDeck.length}'); //добавили
                 if (selectedDeck.isEmpty) {
                   Navigator.of(context).pop(); // Закрытие диалога добавили
                 } else {

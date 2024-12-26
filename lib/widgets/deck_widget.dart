@@ -9,6 +9,7 @@ import '../models/game.dart';
 import '../services/dialog_for_deck.dart';
 import '../services/dialog_window.dart';
 import '../provider/game_data_provider.dart';
+import '../services/snack_bar.dart';
 
 
 class BuildDeckWidget extends StatefulWidget {
@@ -50,11 +51,10 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
                 'deck',
                 currentPlayer);
             await Game.incrementActCount(roomName);
-            // Provider.of<GameDataProvider>(context, listen: false).incrementActCount();
-            // print('сколько каунт сейчас мы в дек виджет через провайдер ${Provider.of<GameDataProvider>(context, listen: false).actCount}');
           } else {
-            DialogWindow.show(context,
-                'You have already taken the card, change your turn', 'Ups..');
+            // SnackBarService.showSnackBar(context, 'You have already taken the card, change your turn', true);
+
+            DialogWindow.show(context, 'You have already taken the card, change your turn', 'Ups..');
           }
       } else {
         await Game.checkVictoryConditions(
@@ -133,6 +133,7 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
                                 widget.roomName,
                                 currentPlayer)
                             : () =>
+                        // SnackBarService.showSnackBar(context, 'Wait your turn', true),
                             DialogWindow.show(
                                 context, 'Wait your turn', 'Ups..'),
                         child: ClipRRect(

@@ -1,13 +1,10 @@
-final Map<String, String> deckOfCards = {
+final Map<String, String> cardDescription = {
   'assets/1b.png' : 'ХВАТЬ-ХВАТЬ',
-  'assets/2b.png' : 'ХВАТЬ-ХВАТЬ',
-  'assets/3b.png' : 'ХВАТЬ-ХВАТЬ',
+
   'assets/4b.png' : 'АРТАБСТОЙЛО',
-  'assets/5b.png' : 'АРТАБСТОЙЛО',
-  'assets/6b.png' : 'АРТАБСТОЙЛО',
+
   'assets/7b.png' : 'ДИСКОБОМБА',
-  'assets/8b.png' : 'ДИСКОБОМБА',
-  'assets/9b.png' : 'ДИСКОБОМБА',
+
   'assets/10b.png' : 'КОФЕИНОВЫЙ ДЕБОШ',
   'assets/11b.png' : 'РАДУЖНАЯ АУРА',
   'assets/12b.png' : 'ПРЫГ-СКОК',
@@ -18,51 +15,31 @@ final Map<String, String> deckOfCards = {
   'assets/4ff.png' : 'КОЛЮЧАЯ ПРОВОЛОКА',
   'assets/5ff.png' : 'МИНИ-СТОЙЛО',
   'assets/1s.png' :'ЕДИНОРОЖИЙ ЯД',
-  'assets/2s.png' :'ЕДИНОРОЖИЙ ЯД',
-  'assets/3s.png' :'ЕДИНОРОЖИЙ ЯД',
+
   'assets/4s.png' :'БЛЕСТЯЩЕЕ ТОРНАДО',
-  'assets/5s.png' :'БЛЕСТЯЩЕЕ ТОРНАДО',
+
   'assets/6s.png' :'ПИНОК',
-  'assets/7s.png' :'ПИНОК',
-  'assets/8s.png' :'ПИНОК',
+
   'assets/9s.png' :'КЛЕВЕР-ПЕРЕВЕРТЫШ',
-  'assets/10s.png' :'КЛЕВЕР-ПЕРЕВЕРТЫШ',
+
   'assets/11s.png' :'ПОЦЕЛУЙ ЛЮБВИ',
   'assets/12s.png' :'НЕЧЕСТНАЯ СДЕЛКА',
-  'assets/13s.png' :'НЕЧЕСТНАЯ СДЕЛКА',
   'assets/14s.png' :'НАГЛЫЙ ГРАБЕЖ',
   'assets/15s.png' :'ОБМЕН ЕДИНОРОЖКАМИ',
-  'assets/16s.png' :'ОБМЕН ЕДИНОРОЖКАМИ',
   'assets/17s.png' :'ДВА ПО ЦЕНЕ ОДНОГО',
-  'assets/18s.png' :'ДВА ПО ЦЕНЕ ОДНОГО',
   'assets/19s.png' :'МИСТИЧЕСКИЙ ВОДОВОРОТ',
   'assets/20s.png' :'ВСТРЯСКА',
   'assets/21s.png' :'ЦЕЛЬС!',
-  'assets/22s.png' :'ЦЕЛЬС!',
   'assets/23s.png' :'ПРИЦЕЛЬНАЯ АТАКА',
   'assets/24s.png' :'ПЕРЕЗАГРУЗКА',
   'assets/25s.png' :'ЧИСТАЯ ВЫГОДА',
-  'assets/1tpru.png':'ТПРУ',
-  'assets/2tpru.png':'ТПРУ',
-  'assets/3tpru.png':'ТПРУ',
-  'assets/4tpru.png':'ТПРУ',
-  'assets/5tpru.png':'ТПРУ',
-  'assets/6tpru.png':'ТПРУ',
-  'assets/7tpru.png':'ТПРУ',
-  'assets/8tpru.png':'ТПРУ',
-  'assets/9tpru.png':'ТПРУ',
-  'assets/10tpru.png':'ТПРУ',
-  'assets/11tpru.png':'ТПРУ',
-  'assets/12tpru.png':'ТПРУ',
-  'assets/13tpru.png':'ТПРУ',
-  'assets/14tpru.png':'ТПРУ',
-  'assets/15t.png':'УБОЙНОЕ ТПРУ',
+
   'assets/1u.png' : 'АВРАЛЬНЫЙ НАРВАЛ',
   'assets/2.png' : 'МАНЯЩИЙ НАРВАЛ',
   'assets/3u.png' : 'ТОРПЕДНЫЙ НАРВАЛ',
   'assets/4u.png' : 'ВЕЛИКИЙ НАРВАЛ',
   'assets/5u.png' : 'НОСОРОГОРОГ',
-  'assets/6u.png' : 'ЛАМАРОГ',
+  'ЛАМАРОГ' : 'Каждый игрок должен сбросить по 1 карте с руки',
   'assets/7u.png' : 'ЖИРНОРОГ',
   'assets/8u.png' : 'ЧЕРНЫЙ БРОНЕРОГ',
   'assets/9u.png' : 'АМЕРИРОГ',
@@ -82,15 +59,4 @@ final Map<String, String> deckOfCards = {
   'assets/23u.png' : 'БЕНЗОПИЛОРОГ',
   'assets/24u.png' : 'ПАФОСНЫЙ КРЫЛОРОГ',
   'assets/25u.png' : 'ФЕНИКСОРОГ',
-};
-
-Map<String, String> babyUnicorn  = {
-
-  'baby_unicorn/1m.png' :  '1',
-  'baby_unicorn/2m.png' :  '1',
-  'baby_unicorn/3m.png' :  '1',
-  'baby_unicorn/4m.png' :  '1',
-  'baby_unicorn/5m.png' :  '1',
-  'baby_unicorn/6m.png' :  '1',
-
 };

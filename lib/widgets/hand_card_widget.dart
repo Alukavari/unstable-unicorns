@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:unstable_unicorns/widgets/scrioll_card.dart';
+import 'package:unstable_unicorns/widgets/scroll_card.dart';
 import '../models/card.dart';
 import '../models/game.dart';
 import '../provider/current_player_provider.dart';
@@ -57,7 +57,6 @@ class HandCardWidget extends StatelessWidget {
                     List<CardModel> cards = cardList.map((cardData) {
                       return CardModel.fromMap(cardData);
                     }).toList();
-// print('мы на хэнд, перерысовываемся');
 
                     return Expanded(
                       child: SizedBox(

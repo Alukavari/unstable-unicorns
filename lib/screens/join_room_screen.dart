@@ -78,7 +78,6 @@ class JoinRoom extends StatelessWidget {
           'There are already 2 players, select another room or create your own',
           true);
       Navigator.push(context,
-          // MaterialPageRoute(builder: (context) => Lobby(email: email)));
           MaterialPageRoute(builder: (context) => Lobby(userCredential: userCredential, email: email,)));
     }
   }
@@ -134,7 +133,6 @@ class JoinRoom extends StatelessWidget {
                                         onPressed: () => _addUser(
                                             context,
                                             '${room['user_nickname']}_${room['name_room']}',
-                                            // '${room['user_nickname']}_${room['name_room']}_${room['playerID']}',
                                             room['playerID']),
                                         style: ElevatedButton.styleFrom(
                                             foregroundColor: bgColor,
@@ -159,7 +157,6 @@ class JoinRoom extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: CustomButton(
-                      // onPressed: Lobby(email: email), title: 'Exit to Lobby'),
                       onPressed: Lobby(userCredential: userCredential, email: email,), title: 'Exit to Lobby'),
                 ),
                 const SizedBox(height: 20),

@@ -11,6 +11,7 @@ import '../const/colors.dart';
 import '../const/const.dart';
 import '../models/game.dart';
 import '../models/game_state.dart';
+import '../models/player.dart';
 import '../models/player_state.dart';
 import '../widgets/custom_button_for_dialog.dart';
 
@@ -24,6 +25,7 @@ class DialogForTPRU {
       String roomName,) {
 
     Future<void> onHandTap() async {
+      bool isEven = tpru.id == '15tpru' ? true : false;
       //разыграть тпру
       await GameState.updateWithNewCardGameDeck(
         roomName,
@@ -35,9 +37,53 @@ class DialogForTPRU {
         roomName,
         tpru,
         'hand',
-        // currentPlayer,
 Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
       );
+
+      if (isEven) {
+        bool isDrawnCard =  await Player.checkCardOnTableForDraw(roomName);
+        await Game.changeGameStatus('inProcess', roomName);
+        if (!isDrawnCard ){
+          await Player.activateCard(
+            context,
+            newCard!,
+            roomName,
+            myID,
+            otherID,
+          );
+          await Game.checkCountCardOnHand(
+            context,
+            roomName,
+            'hand',
+            Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
+            myID, otherID,
+          );
+        }
+          await Game.cleanActCount(roomName);
+          print('обнуляем коунт после розыгрыша карты ${Provider
+              .of<GameDataProvider>(context, listen: false)
+              .actCount}');
+
+        final deckCard = await GameState.getDeck(
+            roomName, 'playingCardOnTable');
+        // print('сколько карт на столе ${deckCard.length}');
+
+        await GameState.addNewGameDeck(roomName, deckCard, 'discardPile');
+        // print('добавили все в сброс');
+
+        // print('удаляем все карты со стола');
+        await GameState.removeNewGameDeck(
+          roomName,
+          'playingCardOnTable',
+        );
+        await Game.nextPlayer(
+          roomName,
+          // currentPlayer,
+          Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
+          myID,
+          otherID,
+        );
+      }
       //onPressedNextPlayer
       await Game.nextPlayer(
         roomName,
@@ -49,7 +95,8 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
     }
 
     Future<void> onHandTapTwo() async {
-      bool isEven = await PlayerState.checkCardOnTableForDraw(roomName);
+      // выйграна ли битва тпру разыгрываем ли мы карту
+      bool isEven = await Player.checkCardOnTableForDraw(roomName);
       String currentPlayer = Provider
           .of<CurrentPlayerState>(context, listen: false)
           .currentPlayer;
@@ -63,7 +110,7 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
 
       if (!isEven) {
         // разыгрывет карту
-        await PlayerState.activateCard(
+        await Player.activateCard(
           context,
           newCard!,
           roomName,
@@ -101,7 +148,6 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
       return showDialog<void>(
         context: context,
         barrierDismissible: false,
-        // builder: (BuildContext context) {
         builder: (BuildContext dialogContext) {
           return Consumer<CurrentPlayerState>(
             builder: (context, currentPlayerState, child) {

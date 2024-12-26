@@ -9,6 +9,7 @@ import '../const/const.dart';
 import '../models/card.dart';
 import '../models/game.dart';
 import '../models/game_state.dart';
+import '../models/player.dart';
 import '../widgets/custom_button_for_dialog.dart';
 import '../provider/current_player_provider.dart';
 import '../provider/game_data_provider.dart';
@@ -23,7 +24,7 @@ class DialogWithoutTPRU {
   ) {
 
     Future<void> onHandTap()async{
-      bool isEven = await PlayerState.checkCardOnTableForDraw(roomName);
+      bool isEven = await Player.checkCardOnTableForDraw(roomName);
       String currentPlayer = Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer;
       print('мы на диалог без тпру перед сменой игрока');
 
@@ -38,8 +39,7 @@ class DialogWithoutTPRU {
     );
 
       if (!isEven) {
-        // print('нечетное, значит разыгрываем карту');
-        await PlayerState.activateCard(
+        await Player.activateCard(
           context,
           newCard!,
           roomName,
@@ -58,10 +58,10 @@ class DialogWithoutTPRU {
           otherID,
         );
       }
-      print('коунт в диалоге визаут тпру до обнуления ${Provider.of<GameDataProvider>(context, listen: false).actCount}');
+        await Game.cleanActCount(roomName);
+        print('обнуляем коунт в диалоге визаут тпру после обнуления ${Provider.of<GameDataProvider>(context, listen: false).actCount}');
 
       await Game.cleanActCount(roomName);
-      print('обнуляем коунт в диалоге визаут тпру после обнуления ${Provider.of<GameDataProvider>(context, listen: false).actCount}');
 
       final deckCard = await GameState.getDeck(roomName, 'playingCardOnTable');
 

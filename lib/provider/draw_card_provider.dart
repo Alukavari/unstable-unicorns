@@ -15,4 +15,5 @@ class DrawCardProvider with ChangeNotifier {
       notifyListeners(); // Уведомляем слушателей о том, что состояние изменилось
     }
   }
+
 }

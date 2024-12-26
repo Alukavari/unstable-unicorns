@@ -15,8 +15,10 @@ import '../models/card.dart';
 import '../models/deck.dart';
 import '../models/game.dart';
 import '../models/game_state.dart';
+import '../models/player.dart';
 import '../models/player_state.dart';
 import '../provider/current_player_provider.dart';
+import '../services/stream_card_action.dart';
 import '../widgets/card_on_table_widget.dart';
 import '../widgets/deck_widget.dart';
 
@@ -146,6 +148,8 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                     ),
                     //button
                     const SizedBox(height: 10),
+                    StreamCardAction(playersRoom:widget.playersRoom),
+                    //провайдер для получения счетчика ходов
                     StreamBuilder(
                         stream: FirebaseFirestore.instance
                             .collection(widget.playersRoom)
@@ -154,13 +158,6 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                             .doc('state')
                             .snapshots(),
                         builder: (context, snapshot) {
-                          // if(snapshot.hasError){
-                          //   print('ошибка в стриме с аксткаунт');
-                          //   return const SizedBox.shrink();
-                          // }
-                          // if (!snapshot.hasData) {
-                          //   return const SizedBox.shrink();
-                          // }
 
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return const Center(child: CircularProgressIndicator());
@@ -185,7 +182,7 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                           });
                           return const SizedBox.shrink();
                         }),
-
+//провайдер для получения текущего игрока
                     StreamBuilder(
                         stream: FirebaseFirestore.instance
                             .collection(widget.playersRoom)
@@ -203,41 +200,54 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                           String gameWin = data['gameWin'];
                           bool isEven = gameWin.isNotEmpty ? true : false;
                           print('победитель $gameWin');
+                          print('текущий статус игры $gameStatus');
 
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             Provider.of<CurrentPlayerState>(context,
                                     listen: false)
                                 .updateCurrentPlayer(currentPlayer);
                           });
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (gameStatus == 'checkTPRU' &&
-                                currentPlayer == myID) {
-                              PlayerState.checkTPRU(
-                                context,
-                                currentPlayer,
-                                myID,
-                                otherID,
-                                widget.playersRoom,
-                              );
-                            } else {
-                              String? gameWinner = myID == gameWin
-                                  ? widget.userNickname
-                                  : otherPlayer;
-                              if (gameStatus == 'finished') {
-                                DialogForFinish.show(
-                                  context,
-                                  isEven
-                                      ? 'Winner $gameWinner,would you like to play again? '
-                                      : 'No winner found, would you like to play again?',
-                                  'Game over',
-                                  myEmail,
-                                  myID,
-                                  widget.playersRoom,
-                                );
-                              }
-                            }
-                          });
+                           WidgetsBinding.instance.addPostFrameCallback((_) {
+                          Game.statusGameAction(
+                              context,
+                              widget.playersRoom,
+                              myID,
+                              otherID,
+                              gameStatus,
+                              currentPlayer,
+                              gameWin,
+                              widget.userNickname,
+                              otherPlayer,
+                              myEmail);
+                              });
+                              // WidgetsBinding.instance.addPostFrameCallback((_) {
+                          //   if (gameStatus == 'checkTPRU' &&
+                          //       currentPlayer == myID) {
+                          //     Player.checkTPRU(
+                          //       context,
+                          //       currentPlayer,
+                          //       myID,
+                          //       otherID,
+                          //       widget.playersRoom,
+                          //     );
+                          //   } else {
+                          //     String? gameWinner = myID == gameWin
+                          //         ? widget.userNickname
+                          //         : otherPlayer;
+                          //     if (gameStatus == 'finished') {
+                          //       DialogForFinish.show(
+                          //         context,
+                          //         isEven
+                          //             ? 'Winner $gameWinner,would you like to play again? '
+                          //             : 'No winner found, would you like to play again?',
+                          //         'Game over',
+                          //         myEmail,
+                          //         myID,
+                          //         widget.playersRoom,
+                          //       );
+                          //     }
+                          //   }
+                          // });
                           print('получили дату из провайдера $currentPlayer');
                           return Align(
                             alignment: Alignment.topRight,

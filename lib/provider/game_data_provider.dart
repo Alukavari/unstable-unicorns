@@ -12,15 +12,4 @@ class GameDataProvider extends ChangeNotifier {
     }
   }
 
-  // void incrementActCount() {
-  //   print('добавляем +1');
-  //   _actCount++;
-  //   notifyListeners();
-  // }
-  //
-  // void cleanCount(){
-  //   print('чистм коунт');
-  //   _actCount = 0;
-  //   notifyListeners();
-  // }
 }

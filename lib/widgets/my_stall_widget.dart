@@ -20,6 +20,8 @@ class MyStallWidget extends StatelessWidget {
     required this.userNickname,
   });
 
+
+
   @override
   Widget build(BuildContext context) {
     if (myID.isEmpty) {

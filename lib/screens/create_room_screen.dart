@@ -30,7 +30,6 @@ class CreateRoom extends StatelessWidget {
     try {
       CollectionReference _firestore =
           FirebaseFirestore.instance.collection('user room');
-      // await _firestore.doc().set({
       await _firestore.doc(userCredential).set({
         'email': email,
         'user_nickname': userNickname,
@@ -42,7 +41,6 @@ class CreateRoom extends StatelessWidget {
       // create room for 2 players
       final roomRef = FirebaseFirestore.instance
           .collection('${userNickname}_$nameRoom')
-          // .collection('${userNickname}_${nameRoom}_$userCredential')
           .doc('player1');
       await roomRef.set({
         'playerID': userCredential,
