@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:unstable_unicorns/const/const.dart';
-import 'package:unstable_unicorns/widgets/scroll_widget_for_deck.dart';
-import '../models/card.dart';
+import 'package:unstable_unicorns/widgets/scroll/scroll_widget_for_deck.dart';
+import '../../models/card.dart';
 
 class DialogForDeck {
   static Future<void> show(

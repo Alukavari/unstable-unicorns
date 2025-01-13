@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../const/colors.dart';
-import '../const/const.dart';
+import '../../const/colors.dart';
+import '../../const/const.dart';
 
 class CustomButtonPurple extends StatelessWidget {
   final dynamic onPressed;

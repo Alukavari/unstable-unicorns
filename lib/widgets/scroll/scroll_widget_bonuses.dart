@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/const/const.dart';
-import '../models/card.dart';
-import '../models/game.dart';
-import '../provider/current_player_provider.dart';
-import '../services/dialog_window.dart';
-import '../provider/game_data_provider.dart';
+import '../../models/card.dart';
+import '../../models/game.dart';
+import '../../provider/current_player_provider.dart';
+import '../../services/dialog/dialog_window.dart';
+import '../../provider/game_data_provider.dart';
 
 class ScrollWidgetBonuses extends StatelessWidget {
   List<CardModel> cards;

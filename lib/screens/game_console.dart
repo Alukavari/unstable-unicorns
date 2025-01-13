@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:unstable_unicorns/provider/game_data_provider.dart';
-import 'package:unstable_unicorns/services/dialog_for_finish.dart';
 import 'package:unstable_unicorns/services/snack_bar.dart';
-import 'package:unstable_unicorns/widgets/custom_button_change.dart';
+import 'package:unstable_unicorns/services/stream_act_count.dart';
+import 'package:unstable_unicorns/services/stream_play_ourt_card_status.dart';
+import 'package:unstable_unicorns/widgets/button/custom_button_change.dart';
 import 'package:unstable_unicorns/widgets/discard_pile_widget.dart';
 import 'package:unstable_unicorns/widgets/hand_card_widget.dart';
 import 'package:unstable_unicorns/widgets/my_bonuses_fines.dart';
@@ -15,7 +15,6 @@ import '../models/card.dart';
 import '../models/deck.dart';
 import '../models/game.dart';
 import '../models/game_state.dart';
-import '../models/player.dart';
 import '../models/player_state.dart';
 import '../provider/current_player_provider.dart';
 import '../services/stream_card_action.dart';
@@ -97,7 +96,6 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
   }
 
   Future<void> _initializeGame() async {
-    print('начало инициализации');
     await _getNicknameOpponent();
     await _getPlayerHashcode();
     if (otherPlayer.isNotEmpty && myID.isNotEmpty && otherID.isNotEmpty) {
@@ -108,7 +106,6 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
       currentPlayer = await Game.currentPlayer(widget.playersRoom);
       myEmail = await Game.getEmailByID(myID) ?? '';
     }
-    print('конец инициализации');
   }
 
   @override
@@ -148,41 +145,10 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                     ),
                     //button
                     const SizedBox(height: 10),
-                    StreamCardAction(playersRoom:widget.playersRoom),
+                    StreamCardAction(playersRoom: widget.playersRoom),
                     //провайдер для получения счетчика ходов
-                    StreamBuilder(
-                        stream: FirebaseFirestore.instance
-                            .collection(widget.playersRoom)
-                            .doc('room')
-                            .collection('action')
-                            .doc('state')
-                            .snapshots(),
-                        builder: (context, snapshot) {
-
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
-                          } else if (snapshot.hasError) {
-                            print('Error: ${snapshot.error}');
-                            return const SizedBox.shrink();
-                          } else if (!snapshot.hasData ||
-                              snapshot.data == null ||
-                              !snapshot.data!.exists) {
-                            return const SizedBox.shrink();
-                          }
-                          final data =
-                              snapshot.data?.data() as Map<String, dynamic>;
-
-                          int actCount = data['actCount'] ?? 0;
-                          print('actCount $actCount');
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            Provider.of<GameDataProvider>(context,
-                                listen: false)
-                                .updateActCount(actCount);
-                          });
-                          return const SizedBox.shrink();
-                        }),
-//провайдер для получения текущего игрока
+                    StreamActCount(playersRoom: widget.playersRoom),
+                    // провайдер для получения текущего игрко и статуса игры
                     StreamBuilder(
                         stream: FirebaseFirestore.instance
                             .collection(widget.playersRoom)
@@ -197,9 +163,8 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
 
                           String currentPlayer = data['currentTurn'] ?? '';
                           String gameStatus = data['gameStatus'];
-                          String gameWin = data['gameWin'];
-                          bool isEven = gameWin.isNotEmpty ? true : false;
-                          print('победитель $gameWin');
+                          String? gameWin = data['gameWin'];
+                          // bool isEven = gameWin.isNotEmpty ? true : false;
                           print('текущий статус игры $gameStatus');
 
                           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -207,48 +172,22 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                                     listen: false)
                                 .updateCurrentPlayer(currentPlayer);
                           });
-                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                          Game.statusGameAction(
-                              context,
-                              widget.playersRoom,
-                              myID,
-                              otherID,
-                              gameStatus,
-                              currentPlayer,
-                              gameWin,
-                              widget.userNickname,
-                              otherPlayer,
-                              myEmail);
-                              });
-                              // WidgetsBinding.instance.addPostFrameCallback((_) {
-                          //   if (gameStatus == 'checkTPRU' &&
-                          //       currentPlayer == myID) {
-                          //     Player.checkTPRU(
-                          //       context,
-                          //       currentPlayer,
-                          //       myID,
-                          //       otherID,
-                          //       widget.playersRoom,
-                          //     );
-                          //   } else {
-                          //     String? gameWinner = myID == gameWin
-                          //         ? widget.userNickname
-                          //         : otherPlayer;
-                          //     if (gameStatus == 'finished') {
-                          //       DialogForFinish.show(
-                          //         context,
-                          //         isEven
-                          //             ? 'Winner $gameWinner,would you like to play again? '
-                          //             : 'No winner found, would you like to play again?',
-                          //         'Game over',
-                          //         myEmail,
-                          //         myID,
-                          //         widget.playersRoom,
-                          //       );
-                          //     }
-                          //   }
-                          // });
-                          print('получили дату из провайдера $currentPlayer');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+
+                            Game.statusGameAction(
+                                context,
+                                widget.playersRoom,
+                                myID,
+                                otherID,
+                                gameStatus,
+                                currentPlayer,
+                                gameWin!,
+                                widget.userNickname,
+                                otherPlayer,
+                                myEmail);
+    });
+
+                          // print('получили дату из провайдера $currentPlayer');
                           return Align(
                             alignment: Alignment.topRight,
                             child: ButtonChange(

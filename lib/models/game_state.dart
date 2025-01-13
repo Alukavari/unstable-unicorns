@@ -22,7 +22,7 @@ class GameState {
       String roomName,
       List<CardModel> newCards,
       String typeDeck) async {
-
+print('добавили целую колоду куда-то');
     List<Map<String, dynamic>> newCardMaps = newCards.map((card) => card.toMap()).toList();
 
     await FirebaseFirestore.instance
@@ -43,7 +43,6 @@ class GameState {
       String typeDeck) async {
     // List<Map<String, dynamic>> newCardMaps = newCards.map((card) => card.toMap()).toList();
     Map<String, dynamic> newCardMaps = newCards.toMap();
-
     await FirebaseFirestore.instance
         .collection(roomName)
         .doc('room')

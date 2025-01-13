@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:unstable_unicorns/const/const.dart';
 
-import '../const/colors.dart';
+import '../../const/colors.dart';
 
 class DialogWindow {
   static Future<void> show(BuildContext context,

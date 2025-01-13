@@ -60,11 +60,10 @@ class BuildOnTableWidget extends StatelessWidget {
           List<CardModel> cardsOnTable = dataOnTable.map((cardData) {
             return CardModel.fromMap(cardData);
           }).toList();
-          // print('playingCardOnTable мы на стримбилде ${cardsOnTable.length}');
 
           if (_cards.length != cardsOnTable.length || !_listEqual(_cards,cardsOnTable)) {
             _cards = cardsOnTable;
-            print('перерисовываем карты на столе _cards ${_cards.length}');
+            // print('перерисовываем карты на столе _cards ${_cards.length}');
 
             // return Expanded(
             return Container(

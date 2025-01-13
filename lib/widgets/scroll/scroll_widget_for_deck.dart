@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/const/const.dart';
-import 'package:unstable_unicorns/services/dialog_window.dart';
-import '../models/card.dart';
-import '../models/deck.dart';
-import '../models/game_state.dart';
-import '../models/player_state.dart';
-import '../provider/game_data_provider.dart';
-import '../services/snack_bar.dart';
+import 'package:unstable_unicorns/services/dialog/dialog_window.dart';
+import '../../models/card.dart';
+import '../../models/deck.dart';
+import '../../models/game_state.dart';
+import '../../models/player_state.dart';
+import '../../provider/game_data_provider.dart';
+import '../../services/snack_bar.dart';
 
 class ScrollWidgetForDeck extends StatefulWidget {
   String roomName;

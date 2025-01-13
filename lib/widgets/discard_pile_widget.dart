@@ -5,7 +5,7 @@ import 'package:unstable_unicorns/widgets/card_widget.dart';
 import '../const/const.dart';
 import '../models/card.dart';
 import '../provider/current_player_provider.dart';
-import '../services/dialog_for_deck.dart';
+import '../services/dialog/dialog_for_deck.dart';
 import '../provider/game_data_provider.dart';
 
 class BuildDiscardPileWidget extends StatelessWidget {
@@ -29,9 +29,9 @@ class BuildDiscardPileWidget extends StatelessWidget {
     String roomName,
     String currentPlayer,
   ) {
-    print('сколько каунт в сбрсое ${Provider
-        .of<GameDataProvider>(context, listen: false)
-        .actCount}');
+    // print('сколько каунт в сбрсое ${Provider
+    //     .of<GameDataProvider>(context, listen: false)
+    //     .actCount}');
     if (Provider
         .of<GameDataProvider>(context, listen: false)
         .actCount == 3) {

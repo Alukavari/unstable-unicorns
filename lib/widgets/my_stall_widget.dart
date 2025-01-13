@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:unstable_unicorns/widgets/scroll_widget.dart';
+import 'package:unstable_unicorns/widgets/scroll/scroll_widget.dart';
 import '../const/const.dart';
 import '../models/card.dart';
 

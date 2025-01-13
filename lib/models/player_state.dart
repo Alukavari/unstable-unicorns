@@ -1,16 +1,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:unstable_unicorns/models/deck.dart';
-import 'package:unstable_unicorns/services/dialog_for_TPRU.dart';
-import 'package:unstable_unicorns/services/dialog_whithoutTPRU.dart';
-import 'package:unstable_unicorns/services/dialog_window.dart';
-import '../provider/current_player_provider.dart';
-import '../provider/draw_card_provider.dart';
-import '../provider/game_data_provider.dart';
-import 'card.dart';
-import 'card.dart';
 import 'card.dart';
 import 'game.dart';
 import 'game_state.dart';
@@ -80,15 +70,12 @@ class PlayerState {
     player1CardsOnTable.add(babyCards[babyIndex1]);
     babyCards.removeAt(babyIndex1);
 
-    print('малыш который добавился 1 игроку${player1CardsOnTable[0].id}');
 
     int babyIndex2 = random.nextInt(babyCards.length);
     player2CardsOnTable.add(babyCards[babyIndex2]);
     babyCards.removeAt(babyIndex2);
-    print('малыш который добавился 2 игроку${player2CardsOnTable[0].id}');
 
     deck.shuffle();
-    print('сколько карт всего ${deck.length}');
     if (deck.length >= count * 2) {
       for (int i = 0; i < count; i++) {
         int randomIndex1 = random.nextInt(deck.length);
@@ -100,18 +87,15 @@ class PlayerState {
           i--;
         }
       }
-      print(
-          'сколько осталось карт в колоде после первой раздачи ${deck.length}');
-      CardModel cardFor1Player =
-          deck.firstWhere((card) => card.type == CardClass.tpru);
-      print('Добавляем карту тпру игрока 1: ${cardFor1Player.id}');
+      // print('сколько осталось карт в колоде после первой раздачи ${deck.length}');
+      CardModel cardFor1Player = deck.firstWhere((card) => card.type == CardClass.tpru);
+      // print('Добавляем карту тпру игрока 1: ${cardFor1Player.id}');
       player1CardsOnHand.add(cardFor1Player);
-      print(
-          'сколько карт у 1 игрока после добавления тпру ${player1CardsOnHand.length}');
+      // print('сколько карт у 1 игрока после добавления тпру ${player1CardsOnHand.length}');
 
       deck.remove(cardFor1Player);
       for (var card in deck) {
-        print('ID карты: после удаления ${card.id}');
+        // print('ID карты: после удаления ${card.id}');
       }
 
       try {
@@ -134,19 +118,11 @@ class PlayerState {
           i--; // Если карта уже есть, повторяем итерацию
         }
       }
-      print(
-          'сколько осталось карт в колоде после второй раздачи ${deck.length}');
-      CardModel cardFor2Player =
-          deck.firstWhere((card) => card.type == CardClass.tpru);
-      print('какую карту я добавляю 2 игроку ${cardFor2Player.id}');
 
-      print('Добавляем карту игрока 1: ${cardFor2Player.id}');
+      CardModel cardFor2Player = deck.firstWhere((card) => card.type == CardClass.tpru);
+
       player2CardsOnHand.add(cardFor2Player);
-      print(
-          'сколько карт у 2 игрока после добавления тпру ${player2CardsOnHand.length}');
       deck.remove(cardFor2Player);
-      print(
-          'сколько осталось карт в колоде после второй раздачи 6 + тпру ${deck.length}');
 
       try {
         await updatePlayerDeck(
@@ -159,14 +135,13 @@ class PlayerState {
         if (!player1CardsOnHand.any((card) => card.id == deck[i].id) &&
             !player2CardsOnHand.any((card) => card.id == deck[i].id)) {
           deckForBD.add(deck[i]);
-          print('какую карту добавляем ${deck[i].id}');
+          // print('какую карту добавляем ${deck[i].id}');
         }
       }
 
-      print('сколько уникальных карт в колоде ${deckForBD.length}');
       // обновить колодe в firestore
       for (int i = 0; i < deckForBD.length; i++) {
-        print('карты в дек для бд: ${deckForBD[i].id}');
+        // print('карты в дек для бд: ${deckForBD[i].id}');
       }
       try {
         await GameState.updateDeck(roomName, deckForBD);
@@ -242,8 +217,7 @@ class PlayerState {
     });
   }
 
-//проверяем на наличие ТПРУ
-//
+
   //забрать карту из сброса на руки
   static Future<void> takeCardPile(
     BuildContext context,
@@ -270,7 +244,6 @@ class PlayerState {
       newCards,
       'discardPile',
     );
-    await Game.nextPlayer(roomName, currentPlayer, myID, otherID);
   }
 
 }

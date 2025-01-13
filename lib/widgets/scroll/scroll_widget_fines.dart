@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:unstable_unicorns/const/colors.dart';
 import 'package:unstable_unicorns/const/const.dart';
 
-import '../models/card.dart';
-import '../services/dialog_window.dart';
+import '../../models/card.dart';
+import '../../services/dialog/dialog_window.dart';
 
 class ScrollWidgetFines extends StatelessWidget {
   List<CardModel> cards;

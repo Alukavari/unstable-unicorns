@@ -6,7 +6,7 @@ import 'package:unstable_unicorns/const/colors.dart';
 import 'package:unstable_unicorns/screens/create_room_screen.dart';
 import 'package:unstable_unicorns/screens/join_room_screen.dart';
 import 'package:unstable_unicorns/services/responsive.dart';
-import 'package:unstable_unicorns/widgets/custom_button.dart';
+import 'package:unstable_unicorns/widgets/button/custom_button.dart';
 import '../const/const.dart';
 import '../models/game.dart';
 import '../services/snack_bar.dart';

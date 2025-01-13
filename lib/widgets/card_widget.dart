@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/card.dart';
-import '../services/dialog_window.dart';
+import '../services/dialog/dialog_window.dart';
 
 class CardWidget extends StatelessWidget {
   final CardModel card;
@@ -12,7 +12,6 @@ class CardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('мы тут пытаемся отобразить карту');
     return SizedBox(
       width: 110,
       height: 170,

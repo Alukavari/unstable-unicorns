@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/card.dart';
-import '../services/dialog_window.dart';
+import '../../models/card.dart';
+import '../../services/dialog/dialog_window.dart';
 
 class ScrollWidget extends StatelessWidget {
   List<CardModel>? cards;

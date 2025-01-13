@@ -5,15 +5,15 @@ import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/models/card.dart';
 import 'package:unstable_unicorns/provider/current_player_provider.dart';
 import 'package:unstable_unicorns/provider/game_data_provider.dart';
-import 'package:unstable_unicorns/widgets/castom_buton_purple.dart';
-import 'package:unstable_unicorns/widgets/custom_button.dart';
-import '../const/colors.dart';
-import '../const/const.dart';
-import '../models/game.dart';
-import '../models/game_state.dart';
-import '../models/player.dart';
-import '../models/player_state.dart';
-import '../widgets/custom_button_for_dialog.dart';
+import 'package:unstable_unicorns/widgets/button/castom_buton_purple.dart';
+import 'package:unstable_unicorns/widgets/button/custom_button.dart';
+import '../../const/colors.dart';
+import '../../const/const.dart';
+import '../../models/game.dart';
+import '../../models/game_state.dart';
+import '../../models/player.dart';
+import '../../models/player_state.dart';
+import '../../widgets/button/custom_button_for_dialog.dart';
 
 class DialogForTPRU {
   static Future<void> show(BuildContext context,
@@ -43,6 +43,7 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
       if (isEven) {
         bool isDrawnCard =  await Player.checkCardOnTableForDraw(roomName);
         await Game.changeGameStatus('inProcess', roomName);
+
         if (!isDrawnCard ){
           await Player.activateCard(
             context,
@@ -51,13 +52,14 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
             myID,
             otherID,
           );
-          await Game.checkCountCardOnHand(
-            context,
-            roomName,
-            'hand',
-            Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
-            myID, otherID,
-          );
+          // await Game.checkCountCardOnHand(
+          //   context,
+          //   roomName,
+          //   'hand',
+          //   Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
+          //   myID,
+          //   otherID,
+          // );
         }
           await Game.cleanActCount(roomName);
           print('обнуляем коунт после розыгрыша карты ${Provider
@@ -68,14 +70,16 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
             roomName, 'playingCardOnTable');
         // print('сколько карт на столе ${deckCard.length}');
 
-        await GameState.addNewGameDeck(roomName, deckCard, 'discardPile');
-        // print('добавили все в сброс');
+        if(deckCard.isNotEmpty){
+          await GameState.addNewGameDeck(roomName, deckCard, 'discardPile');
+          await GameState.removeNewGameDeck(
+            roomName,
+            'playingCardOnTable',
+          );
+        }
 
         // print('удаляем все карты со стола');
-        await GameState.removeNewGameDeck(
-          roomName,
-          'playingCardOnTable',
-        );
+
         await Game.nextPlayer(
           roomName,
           // currentPlayer,
@@ -97,13 +101,12 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
     Future<void> onHandTapTwo() async {
       // выйграна ли битва тпру разыгрываем ли мы карту
       bool isEven = await Player.checkCardOnTableForDraw(roomName);
-      String currentPlayer = Provider
-          .of<CurrentPlayerState>(context, listen: false)
-          .currentPlayer;
       await Game.changeGameStatus('inProcess', roomName);
       await Game.nextPlayer(
         roomName,
-        currentPlayer,
+        Provider
+            .of<CurrentPlayerState>(context, listen: false)
+            .currentPlayer,
         myID,
         otherID,
       );
@@ -117,32 +120,30 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
           myID,
           otherID,
         );
-      await Game.checkCountCardOnHand(
-        context,
-        roomName,
-        'hand',
-        Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
-        myID, otherID,
-      );
+      // await Game.checkCountCardOnHand(
+      //   context,
+      //   roomName,
+      //   'hand',
+      //   Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
+      //   myID, otherID,
+      // );
     }
 
       await Game.cleanActCount(roomName);
-      print('обнуляем коунт после розыгрыша карты ${Provider
-          .of<GameDataProvider>(context, listen: false)
-          .actCount}');
+      // print('обнуляем коунт после розыгрыша карты ${Provider
+      //     .of<GameDataProvider>(context, listen: false)
+      //     .actCount}');
 
     final deckCard = await GameState.getDeck(
     roomName, 'playingCardOnTable');
-    // print('сколько карт на столе ${deckCard.length}');
-
-    await GameState.addNewGameDeck(roomName, deckCard, 'discardPile');
-    // print('добавили все в сброс');
-
-    // print('удаляем все карты со стола');
-    await GameState.removeNewGameDeck(
+if(deckCard.isNotEmpty){
+  await GameState.addNewGameDeck(roomName, deckCard, 'discardPile');
+  await GameState.removeNewGameDeck(
     roomName,
     'playingCardOnTable',
-    );
+  );
+}
+
   }
 
       return showDialog<void>(
@@ -168,7 +169,7 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
                           children: [
                             ElevatedButton(
                               onPressed: () async {
-                                print('мы тут разыгрываем тпру');
+                                // print('мы тут разыгрываем тпру');
                                 try {
                                   onHandTap();
                                 } catch (e) {
@@ -190,7 +191,7 @@ Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
                                 try {
                                   onHandTapTwo();
                                 } catch (e) {
-                                  print('отказались играть TPRU: $e');
+                                  // print('отказались играть TPRU: $e');
                                 } finally {
                                   Navigator.of(dialogContext).pop();
                                 }

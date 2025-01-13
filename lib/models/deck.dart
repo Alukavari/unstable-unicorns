@@ -8,7 +8,7 @@ final List<CardModel> babyDeck = [
       'assets/1m.png',
       '1m'),
   CardModel(
-      'Baby2',
+      'Baby',
       'Если ты должен принести в жертву, уничтожить или вернуть на руку малыша-единорожка, вместо этого помести его в ясли',
       CardClass.baby,
       'assets/2m.png',
@@ -95,7 +95,7 @@ final List<CardModel> cards = [
       CardClass.bonus,
       'assets/10b.png',
       '10b'),
-  CardModel('РАДУЖНАЯ РАДУГА', 'Твоих единорожков нельзя уничтожить',
+  CardModel('РАДУЖНАЯ АУРА', 'Твоих единорожков нельзя уничтожить',
       CardClass.bonus, 'assets/11b.png', '11b'),
   CardModel(
       'ПРЫГ-СКОК',

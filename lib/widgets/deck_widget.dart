@@ -6,8 +6,8 @@ import 'package:unstable_unicorns/provider/current_player_provider.dart';
 import '../const/const.dart';
 import '../models/card.dart';
 import '../models/game.dart';
-import '../services/dialog_for_deck.dart';
-import '../services/dialog_window.dart';
+import '../services/dialog/dialog_for_deck.dart';
+import '../services/dialog/dialog_window.dart';
 import '../provider/game_data_provider.dart';
 import '../services/snack_bar.dart';
 
@@ -40,7 +40,6 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
 
       if (cards.isNotEmpty) {
           if (Provider.of<GameDataProvider>(context, listen: false).actCount <= 1) {
-            print('deck actCount в дек виджет через провайдер ${Provider.of<GameDataProvider>(context, listen: false).actCount}');
             DialogForDeck.show(
                 context,
                 countTakeCards,
@@ -105,7 +104,7 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
             return CardModel.fromMap(cardData);
           }).toList();
 
-          print('мы в дек ${newCards.length}');
+          // print('мы в дек ${newCards.length}');
 
           if (newCards.length != _cards.length ||
               !_listEqual(_cards, newCards)) {
@@ -133,7 +132,6 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
                                 widget.roomName,
                                 currentPlayer)
                             : () =>
-                        // SnackBarService.showSnackBar(context, 'Wait your turn', true),
                             DialogWindow.show(
                                 context, 'Wait your turn', 'Ups..'),
                         child: ClipRRect(

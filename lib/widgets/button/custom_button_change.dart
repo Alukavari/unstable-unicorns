@@ -4,13 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/provider/check_progress_provider.dart';
-import 'package:unstable_unicorns/services/dialog_window.dart';
+import 'package:unstable_unicorns/services/dialog/dialog_window.dart';
 import 'package:unstable_unicorns/provider/game_data_provider.dart';
 import 'package:unstable_unicorns/services/snack_bar.dart';
-import '../const/colors.dart';
-import '../const/const.dart';
-import '../models/game.dart';
-import '../provider/current_player_provider.dart';
+import '../../const/colors.dart';
+import '../../const/const.dart';
+import '../../models/game.dart';
+import '../../provider/current_player_provider.dart';
 
 class ButtonChange extends StatefulWidget {
   final String roomName;

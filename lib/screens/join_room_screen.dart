@@ -5,7 +5,7 @@ import 'package:unstable_unicorns/screens/create_room_screen.dart';
 import 'package:unstable_unicorns/screens/game_board_screen.dart';
 import 'package:unstable_unicorns/screens/lobby.dart';
 import 'package:unstable_unicorns/services/responsive.dart';
-import 'package:unstable_unicorns/widgets/custom_button.dart';
+import 'package:unstable_unicorns/widgets/button/custom_button.dart';
 import 'package:unstable_unicorns/widgets/custom_text.dart';
 
 import '../const/colors.dart';

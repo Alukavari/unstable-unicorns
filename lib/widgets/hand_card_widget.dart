@@ -1,11 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:unstable_unicorns/widgets/scroll_card.dart';
+import 'package:unstable_unicorns/widgets/scroll/scroll_hand_card.dart';
 import '../models/card.dart';
-import '../models/game.dart';
-import '../provider/current_player_provider.dart';
-import '../provider/game_data_provider.dart';
+
 
 class HandCardWidget extends StatelessWidget {
   final String roomName;
@@ -61,7 +58,7 @@ class HandCardWidget extends StatelessWidget {
                     return Expanded(
                       child: SizedBox(
                           height: 170,
-                          child: ScrollCard(
+                          child: ScrollHandCard(
                               cards: cards,
                               roomName: roomName,
                               myID: myID,

@@ -1,4 +1,4 @@
-final Map<String, String> cardDescription = {
+Map<String, String> cardDescription = {
   'assets/1b.png' : 'ХВАТЬ-ХВАТЬ',
 
   'assets/4b.png' : 'АРТАБСТОЙЛО',
@@ -6,7 +6,7 @@ final Map<String, String> cardDescription = {
   'assets/7b.png' : 'ДИСКОБОМБА',
 
   'assets/10b.png' : 'КОФЕИНОВЫЙ ДЕБОШ',
-  'assets/11b.png' : 'РАДУЖНАЯ АУРА',
+  // 'РАДУЖНАЯ АУРА' : 'РАДУЖНАЯ АУРА',
   'assets/12b.png' : 'ПРЫГ-СКОК',
   'assets/13b.png' : 'РАДУЖНОЕ ЛАССО',
   'assets/1ff.png' : 'СЛЕПЯЩИЙ СВЕТ',
@@ -14,7 +14,7 @@ final Map<String, String> cardDescription = {
   'assets/3ff.png' : 'ПАНДЕЦ',
   'assets/4ff.png' : 'КОЛЮЧАЯ ПРОВОЛОКА',
   'assets/5ff.png' : 'МИНИ-СТОЙЛО',
-  'assets/1s.png' :'ЕДИНОРОЖИЙ ЯД',
+  'ЕДИНОРОЖИЙ ЯД': 'Choose the unicorn you want to destroy',
 
   'assets/4s.png' :'БЛЕСТЯЩЕЕ ТОРНАДО',
 
@@ -26,7 +26,8 @@ final Map<String, String> cardDescription = {
   'assets/12s.png' :'НЕЧЕСТНАЯ СДЕЛКА',
   'assets/14s.png' :'НАГЛЫЙ ГРАБЕЖ',
   'assets/15s.png' :'ОБМЕН ЕДИНОРОЖКАМИ',
-  'assets/17s.png' :'ДВА ПО ЦЕНЕ ОДНОГО',
+  'ДВА ПО ЦЕНЕ ОДНОГО1' :'Choose a card to sacrifice',
+  'ДВА ПО ЦЕНЕ ОДНОГО2' :'Choose 2 cards that you will destroy',
   'assets/19s.png' :'МИСТИЧЕСКИЙ ВОДОВОРОТ',
   'assets/20s.png' :'ВСТРЯСКА',
   'assets/21s.png' :'ЦЕЛЬС!',

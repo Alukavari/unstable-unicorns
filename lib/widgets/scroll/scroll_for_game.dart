@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:unstable_unicorns/models/game_state.dart';
-import 'package:unstable_unicorns/provider/check_progress_provider.dart';
-import '../models/card.dart';
-import '../models/game.dart';
-import '../models/player.dart';
-import '../models/player_state.dart';
-import '../provider/current_player_provider.dart';
-import '../provider/game_data_provider.dart';
-import '../services/dialog_window.dart';
+import 'package:unstable_unicorns/models/deck.dart';
+import '../../models/card.dart';
+import '../../models/game.dart';
+import '../../services/dialog/dialog_window.dart';
 
 class ScrollForGame extends StatefulWidget {
   List<CardModel>? cards;
   String roomName;
   String myID;
   int countDiscard;
+  Function (BuildContext context, CardModel? card) onCardTap; // Функция обратного вызова для onTap
+
 
   ScrollForGame({
     super.key,
@@ -22,31 +18,30 @@ class ScrollForGame extends StatefulWidget {
     required this.roomName,
     required this.myID,
     required this.countDiscard,
+    required this.onCardTap,
   });
 
   @override
   State<ScrollForGame> createState() => _ScrollForGame();
+
 }
 class _ScrollForGame extends State<ScrollForGame> {
-
   int count = 0;
 
   void _onTap(
     BuildContext context,
     CardModel? card,
   ) async {
+    print('мы на скрол фор гейм, пытаемя уничтожить единорога');
     if(count < widget.countDiscard) {
-      await Player.cardDiscard(context, widget.roomName, card!, widget.myID);
+      await widget.onCardTap!(context, card);
       await Game.incrementCardAction(widget.roomName);
-      print('сколько кардАктион ${Provider
-          .of<ProgressCheckProvider>(context, listen: false)
-          .check}');
-      // Provider.of<ProgressCheckProvider>(context, listen:false).incrementCheck();
       count++;
-    } else{
-      Navigator.of(context).pop();// Закрываем диалог, если достигли лимита
+      if(count >= widget.countDiscard ){
+        await Game.cleanCardAction(widget.roomName);
+        Navigator.of(context).pop();
+      }
     }
-    print(' првоеряем сколько в провайдере чек после плюса текущего ${Provider.of<ProgressCheckProvider>(context, listen: false).check}');
   }
 
   @override
@@ -58,7 +53,7 @@ class _ScrollForGame extends State<ScrollForGame> {
         child: ListView.builder(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
-          itemCount: widget.cards!.length,
+          itemCount: widget.cards?.length,
           itemBuilder: (context, index) {
             return Container(
               width: 110,

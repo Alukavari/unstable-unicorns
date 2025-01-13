@@ -7,23 +7,19 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/models/player.dart';
 import 'package:unstable_unicorns/models/player_state.dart';
-import 'package:unstable_unicorns/provider/draw_card_provider.dart';
-import 'package:unstable_unicorns/screens/lobby.dart';
-import 'package:unstable_unicorns/provider/current_player_provider.dart';
-import 'package:unstable_unicorns/provider/discard_card_provider.dart';
 
-import '../const/deckOfCards.dart';
-import '../services/dialog_for_finish.dart';
-import '../services/dialog_for_game.dart';
-import '../services/dialog_window.dart';
-import '../provider/game_data_provider.dart';
+import 'package:unstable_unicorns/provider/discard_card_provider.dart';
+import 'package:unstable_unicorns/provider/game_play_out_card_status_provider.dart';
+
+import '../provider/current_player_provider.dart';
+import '../services/dialog/dialog_for_finish.dart';
+import '../services/dialog/dialog_window.dart';
 import '../services/snack_bar.dart';
-import '../widgets/scroll_for_game.dart';
 import 'card.dart';
 
 class Game {
-
   bool openDialog = false;
+
   // start game
   static Future<void> startGame(
       String roomName, String playerID1, String playerID2) async {
@@ -34,7 +30,6 @@ class Game {
       'gameWin': '',
       'drawCard': [],
       'lastActive': FieldValue.serverTimestamp(),
-
     });
 
     final roomRef2 =
@@ -44,11 +39,22 @@ class Game {
     if ((!roomData.exists || roomData.data()?['players'] == null)) return;
     final players = List<String>.from(roomData.data()?['players']);
 
+    await roomRef2.update({
+      'currentTurn': players.first,
+    });
+
     await roomRef2.collection('GameState').doc('state').set({
       'deck': [],
       'discardPile': [],
       'playingCardOnTable': [],
     });
+
+    await roomRef2.collection('GameCardStatus').doc('state').set({
+      'gameCardStatus': 'nothing',
+    });
+
+
+
 
     for (String playerID in players) {
       await PlayerState.setPlayerState(roomName, playerID);
@@ -56,7 +62,6 @@ class Game {
 
     await roomRef2.update({
       'gameStatus': 'inProcess',
-      'currentTurn': players.first,
     });
 
     await roomRef2.collection('action').doc('state').set({
@@ -69,6 +74,8 @@ class Game {
       'lastActive': FieldValue.serverTimestamp(),
     });
   }
+
+
 
   //get current player
   static Future<String> currentPlayer(String roomName) async {
@@ -117,32 +124,81 @@ class Game {
     String roomName,
   ) async {
     final roomRef =
-        FirebaseFirestore.instance.collection(roomName).doc('room').update({
+        FirebaseFirestore.instance.collection(roomName).doc('room')
+            .update({
       'gameStatus': gameStatus,
       'lastActive': FieldValue.serverTimestamp(),
     });
   }
 
+  static Future<String?> getGameStatus(String roomName) async {
+    DocumentSnapshot snapshot =
+    await FirebaseFirestore.instance.collection(roomName).doc('room')
+        .get();
+
+    if (snapshot.exists) {
+      Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
+
+      if (data != null && data.containsKey('gameStatus')) {
+        String gameStatus = data['gameStatus'] ?? '';
+        return gameStatus;
+      }
+    }
+  }
+
+  static Future<void> updateGameCardStatus(
+      String roomName,
+      String newStatus,
+      ) async {
+    final roomRef = FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
+        .collection('GameCardStatus')
+        .doc('state')
+        .update({
+      'gameCardStatus': newStatus,
+    });
+  }
+
+  static Future<String?> getGameCardStatus(
+      String roomName,
+      ) async {
+    final roomRef = await FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
+        .collection('GameCardStatus')
+        .doc('state')
+        .get();
+    if (roomRef.exists) {
+      Map<String, dynamic>? data = roomRef.data();
+
+      if (data != null && data.containsKey('gameCardStatus')) {
+        String gameCardStatus = data['gameCardStatus'] ?? '';
+        return gameCardStatus;
+      }
+    }
+  }
+
   static Future<void> cleanActCount(
     String roomName,
   ) async {
-    final roomRef =
-        FirebaseFirestore.instance.collection(roomName)
-            .doc('room')
+    final roomRef = FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
         .collection('action')
         .doc('state')
-            .update({
+        .update({
       'actCount': 0,
       'lastActive': FieldValue.serverTimestamp(),
     });
   }
 
   static Future<void> updateActCount(
-      String roomName,
-      int newCount,
-      ) async {
-    final roomRef =
-    FirebaseFirestore.instance.collection(roomName)
+    String roomName,
+    int newCount,
+  ) async {
+    final roomRef = FirebaseFirestore.instance
+        .collection(roomName)
         .doc('room')
         .collection('action')
         .doc('state')
@@ -155,9 +211,12 @@ class Game {
   static Future<int?> getActCount(
     String roomName,
   ) async {
-    final roomRef =
-        await FirebaseFirestore.instance.collection(roomName).doc('room').collection('action')
-            .doc('state').get();
+    final roomRef = await FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
+        .collection('action')
+        .doc('state')
+        .get();
     if (roomRef.exists) {
       Map<String, dynamic>? data = roomRef.data() as Map<String, dynamic>?;
 
@@ -172,21 +231,22 @@ class Game {
     String roomName,
   ) async {
     int? actCount = await getActCount(roomName) ?? 0;
-    final roomRef =
-        FirebaseFirestore.instance.collection(roomName).doc('room').collection('action')
-            .doc('state').update({
+    final roomRef = FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
+        .collection('action')
+        .doc('state')
+        .update({
       'actCount': actCount + 1,
       'lastActive': FieldValue.serverTimestamp(),
     });
   }
 
-
-
   static Future<void> cleanCardAction(
-      String roomName,
-      ) async {
-    final roomRef =
-    FirebaseFirestore.instance.collection(roomName)
+    String roomName,
+  ) async {
+    final roomRef = FirebaseFirestore.instance
+        .collection(roomName)
         .doc('room')
         .collection('cardAction')
         .doc('state')
@@ -197,11 +257,11 @@ class Game {
   }
 
   static Future<void> updateCardAction(
-      String roomName,
-      int newCount,
-      ) async {
-    final roomRef =
-    FirebaseFirestore.instance.collection(roomName)
+    String roomName,
+    int newCount,
+  ) async {
+    final roomRef = FirebaseFirestore.instance
+        .collection(roomName)
         .doc('room')
         .collection('cardAction')
         .doc('state')
@@ -212,11 +272,14 @@ class Game {
   }
 
   static Future<int?> getCardAction(
-      String roomName,
-      ) async {
-    final roomRef =
-    await FirebaseFirestore.instance.collection(roomName).doc('room').collection('cardAction')
-        .doc('state').get();
+    String roomName,
+  ) async {
+    final roomRef = await FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
+        .collection('cardAction')
+        .doc('state')
+        .get();
     if (roomRef.exists) {
       Map<String, dynamic>? data = roomRef.data() as Map<String, dynamic>?;
 
@@ -228,55 +291,45 @@ class Game {
   }
 
   static Future<void> incrementCardAction(
-      String roomName,
-      ) async {
+    String roomName,
+  ) async {
     int? actCount = await getCardAction(roomName) ?? 0;
-    final roomRef =
-    FirebaseFirestore.instance.collection(roomName).doc('room').collection('cardAction')
-        .doc('state').update({
+    final roomRef = FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
+        .collection('cardAction')
+        .doc('state')
+        .update({
       'cardAction': actCount + 1,
       'lastActive': FieldValue.serverTimestamp(),
     });
   }
-
-
 
   static Future<void> changeWinner(
     String currentPlayer,
     String roomName,
   ) async {
     final roomRef =
-        FirebaseFirestore.instance.collection(roomName).doc('room').update({
+        FirebaseFirestore.instance.collection(roomName).doc('room')
+            .update({
       'gameWin': currentPlayer,
-      'lastActive': FieldValue.serverTimestamp(),
+      // 'lastActive': FieldValue.serverTimestamp(),
     });
   }
 
-  static Future<String?> getGameStatus(String roomName) async {
-    DocumentSnapshot snapshot =
-        await FirebaseFirestore.instance.collection(roomName).doc('room').get();
 
-    if (snapshot.exists) {
-      Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
 
-      if (data != null && data.containsKey('gameStatus')) {
-        String gameStatus = data['gameStatus'] ?? '';
-        return gameStatus;
-      }
-    }
-  }
-
-  static Future<void> updateDrawCard(String roomName, CardModel? cards) async {
+  static Future<void> updatePlayOutCard(String roomName, CardModel? cards) async {
     Map<String, dynamic>? newCardMaps = cards?.toMap();
 
     await FirebaseFirestore.instance.collection(roomName).doc('room').update({
       'drawCard': newCardMaps,
     });
-  }
+    print('сейчас обновляю игровую карту');}
 
-  static Future<CardModel?> getDrawCard(String roomName) async {
+  static Future<CardModel?> getPlayOutCard(String roomName) async {
     DocumentSnapshot snapshot =
-    await FirebaseFirestore.instance.collection(roomName).doc('room').get();
+        await FirebaseFirestore.instance.collection(roomName).doc('room').get();
 
     if (snapshot.exists) {
       Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
@@ -294,17 +347,6 @@ class Game {
         print('Поле drawCard не найдено');
         return null; // Поле не найдено
       }
-      // Map<String, dynamic> cardData = data['drawCard'];
-
-      // List<CardModel> cards =
-      // cardsData.map((cardData) => CardModel.fromMap(cardData)).toList();
-      // cardData.map((cardData) => CardModel.fromMap(cardData)).toList();
-      // return CardModel.fromMap(cardData);
-      //   }
-      // }
-      // List<CardModel> cards = [];
-      // print('не нашли разыгрываемую карту');
-      // return null; // Если колода не найдена
     }
   }
 
@@ -372,9 +414,6 @@ class Game {
     String myID,
     String otherID,
   ) async {
-    print('мы на чеккоунт семи');
-    // String? gameStatus = await Game.getGameStatus(roomName);
-
     List<CardModel>? cardsOnHand = await PlayerState.getPlayerDeck(
       roomName,
       typeDeck,
@@ -382,57 +421,37 @@ class Game {
     );
     int countCardsOnHand = cardsOnHand?.length ?? 0;
     int difference = 0;
-    print('сколько карт на руках $countCardsOnHand');
 
+    if (countCardsOnHand >= 0 && countCardsOnHand <= 7) {
+      await Game.checkVictoryConditions(
+        roomName,
+        currentPlayer,
+      );
 
-      if (countCardsOnHand >= 0 && countCardsOnHand <= 7) {
-        // Provider.of<GameDataProvider>(context, listen: false).cleanCount();
-        print(
-            'до обнуления в чек кард он хэнд ${Provider
-                .of<GameDataProvider>(context, listen: false)
-                .actCount}');
-        // if (gameStatus == 'inProcess') {
-        print('до семи');
+      await Game.nextPlayer(
+        roomName,
+        currentPlayer,
+        myID,
+        otherID,
+      );
 
-        // Provider.of<GameDataProvider>(context, listen: false).cleanCount();
+      await Game.cleanActCount(roomName);
+    } else {
+      await Game.incrementActCount(roomName);
 
-        await Game.checkVictoryConditions(
-          roomName,
-          currentPlayer,
-        );
+      difference = countCardsOnHand - 7;
+      Provider.of<DiscardCardProvider>(context, listen: false)
+          .updateDiscardCard(difference);
 
-        await Game.nextPlayer(
-          roomName,
-          currentPlayer,
-          myID,
-          otherID,
-        );
-
-        await Game.cleanActCount(roomName);
-        print(
-            'обнулили коунт после смены игрока текущего ${Provider
-                .of<GameDataProvider>(context, listen: false)
-                .actCount}');
-      } else {
-        print('больше семи');
-        await Game.incrementActCount(roomName);
-        print(
-            'должно быть около трех count после добавления${Provider
-                .of<GameDataProvider>(context, listen: false)
-                .actCount}');
-
-        difference = countCardsOnHand - 7;
-        print('передали провайдеру разницу от 7 $difference');
-        Provider.of<DiscardCardProvider>(context, listen: false)
-            .updateDiscardCard(difference);
-
-        await DialogWindow.show(
-          context,
-          'You have more than 7 cards in your hand, discard $difference and pass the turn',
-          'Notification',
-        );
-      }
+      await DialogWindow.show(
+        context,
+        'You have more than 7 cards in your hand, discard $difference and pass the turn',
+        'Notification',
+      );
     }
+  }
+
+
 
   static Future<void> checkVictoryConditions(
     String roomName,
@@ -461,18 +480,17 @@ class Game {
   }
 
   static Future<void> statusGameAction(
-    BuildContext context,
-    String playersRoom,
-    String myID,
-    String otherID,
-    String gameStatus,
-    String currentPlayer,
-    String gameWin,
-    String? userNickname,
-    String otherPlayer,
-    String myEmail,
-  {bool openDialog = false}
-  ) async {
+      BuildContext context,
+      String playersRoom,
+      String myID,
+      String otherID,
+      String gameStatus,
+      String currentPlayer,
+      String gameWin,
+      String? userNickname,
+      String otherPlayer,
+      String myEmail,
+      {bool openDialog = false}) async {
     bool isEven = gameWin.isNotEmpty ? true : false;
     if (gameStatus == 'checkTPRU' && currentPlayer == myID) {
       Player.checkTPRU(
@@ -482,6 +500,10 @@ class Game {
         otherID,
         playersRoom,
       );
+
+      if (currentPlayer != myID) {
+          SnackBarService.showSnackBar(context, 'Player $otherPlayer makes a move', false);
+        }
     } else if (gameStatus == 'finished') {
       String? gameWinner = myID == gameWin ? userNickname : otherPlayer;
 
@@ -495,26 +517,20 @@ class Game {
         myID,
         playersRoom,
       );
-    } else if (gameStatus == 'drawnLamarog') {
-      CardModel? newCard = await Game.getDrawCard(playersRoom);
-      String? nameCard = newCard?.name ?? '';
-      print('имя карты $nameCard');
 
-      List<CardModel>? myCard = await PlayerState.getPlayerDeck(
-          playersRoom, 'hand', myID);
-      if (!openDialog) {
-        openDialog = true;
-        print('открываем диалог для единорогов'); // Установите флаг перед открытием диалога
-        DialogForGame.show(
-            context,
-            'The LAMAROG card is played, each player must discard 1 card',
-            playersRoom,
-            myCard!,
-            myID,
-            1).then((_) {
-          openDialog = false; // Сбросьте флаг после закрытия диалога
-        });
-      }
+    }else if (gameStatus == 'playOutSpell' && myID == Provider.of<CurrentPlayerState>(context, listen:false).currentPlayer) {
+        print('тулущий игрок через куррент $currentPlayer');
+        print('тулущий игрок через провайдер ${Provider.of<CurrentPlayerState>(context, listen:false).currentPlayer}');
+        CardModel? card = await Game.getPlayOutCard(playersRoom);
+
+        print('разыгрываемая карта в статус гейм ${card?.name}');
+if(card != null){
+  await CardModel.playOutSpell(context, playersRoom, card, myID, otherID);
+} else{
+  print('равно нулю разыгрываемая карта');
+}
+        // }
+      // }
     }
   }
 }

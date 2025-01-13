@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:unstable_unicorns/const/const.dart';
 import 'package:unstable_unicorns/screens/lobby.dart';
-import '../const/colors.dart';
-import '../models/game.dart';
-import '../widgets/castom_buton_purple.dart';
-import '../widgets/custom_button.dart';
+import '../../const/colors.dart';
+import '../../models/game.dart';
+import '../../widgets/button/castom_buton_purple.dart';
+import '../../widgets/button/custom_button.dart';
 
 class DialogForFinish {
   static Future<void> show(
@@ -21,7 +21,6 @@ class DialogForFinish {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
-        print('мы на диалоге когда объявлен победитель');
         return AlertDialog(
           title: Text(title, style: textForDialog, textAlign: TextAlign.center),
           backgroundColor: Colors.white,
