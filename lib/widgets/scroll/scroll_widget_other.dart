@@ -1,40 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:unstable_unicorns/const/const.dart';
-
 import '../../models/card.dart';
 import '../../services/dialog/dialog_window.dart';
 
-class ScrollWidgetFines extends StatelessWidget {
-  List<CardModel> cards;
+class ScrollWidgetOtherPlayer extends StatelessWidget {
+  List<CardModel>? cards;
 
-  ScrollWidgetFines({
+
+  ScrollWidgetOtherPlayer({
     super.key,
     required this.cards,
   });
 
+
   @override
   Widget build(BuildContext context) {
+
     return ListView.builder(
       shrinkWrap: true,
       scrollDirection: Axis.horizontal,
-      itemCount: cards.length,
+      itemCount: cards!.length,
       itemBuilder: (context, index) {
         return Container(
+          width: 110,
           margin: const EdgeInsets.all(5),
           child: GestureDetector(
             onDoubleTap: () {
               DialogWindow.show(
-                  context, cards[index].description, cards[index].name);
+                  context, cards![index].description, cards![index].name);
             },
             child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  color: Colors.white,
-                  width: 80,
-                  height: 30,
-                  child: Center(child: Text(cards[index].name, style: textForFB, textAlign: TextAlign.center)),
-                )
-
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                cards![index].imageUrl,
+                fit: BoxFit.cover,
+                width: 110,
+                height: 170,
+              ),
             ),
           ),
         );

@@ -14,8 +14,6 @@ class CustomButtonPurple extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-
-
       onPressed: () {
 
         Navigator.of(context).push(
@@ -27,7 +25,7 @@ class CustomButtonPurple extends StatelessWidget {
           backgroundColor: bgColor,
           shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-      child: Text(title,style: textBoldWhite),
+      child: Text(title,style: textBoldWhite, textAlign: TextAlign.center,),
     );
   }
 }

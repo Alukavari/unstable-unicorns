@@ -56,7 +56,6 @@ class _ScrollWidgetForDeckState extends State<ScrollWidgetForDeck> {
       });
       return const SizedBox.shrink();
     }
-    // print('gameDeck count ${widget.gameDeck!.length}');
     return AlertDialog(
       backgroundColor: Colors.white,
       content: SizedBox(
@@ -74,7 +73,7 @@ class _ScrollWidgetForDeckState extends State<ScrollWidgetForDeck> {
                     selectedDeck[index].name);
               },
               onTap: () async {
-                await PlayerState.addCardsPlayerDeck(
+                await PlayerState.addCardPlayerDeck(
                     widget.roomName,
                     selectedDeck[index],
                     widget.typeDeck,

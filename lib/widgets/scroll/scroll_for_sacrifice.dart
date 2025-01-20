@@ -39,12 +39,13 @@ class _ScrollForSacrifice extends State<ScrollForSacrifice> {
         await Player.sacrificeBonus(card, widget.roomName, widget.myID);
 
       } else if(
-      card?.type == CardClass.unicorn){
+      card?.type == CardClass.unicorn || card?.type == CardClass.baby){
         await Player.sacrificeUnicorn(widget.roomName, card, widget.myID);
       } else if(
       card?.type == CardClass.fine){
         await Player.sacrificeFines(card, widget.roomName, widget.myID);
       }
+
       await Game.incrementCardAction(widget.roomName);
       count++;
       if(count >= widget.countDiscard ){

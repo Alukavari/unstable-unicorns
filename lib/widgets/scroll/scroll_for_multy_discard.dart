@@ -1,32 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:unstable_unicorns/models/deck.dart';
+import 'package:unstable_unicorns/models/player_state.dart';
 import '../../models/card.dart';
 import '../../models/game.dart';
 import '../../models/player.dart';
 import '../../services/dialog/dialog_window.dart';
 
-class ScrollForDestroy extends StatefulWidget {
+class ScrollForMultiDiscard extends StatefulWidget {
   List<CardModel>? cards;
   String roomName;
   String myID;
-  String otherID;
   int countDestroy;
 
 
-  ScrollForDestroy({
+  ScrollForMultiDiscard({
     super.key,
     required this.cards,
     required this.roomName,
     required this.myID,
-    required this.otherID,
     required this.countDestroy,
   });
 
   @override
-  State<ScrollForDestroy> createState() => _ScrollForDestroy();
+  State<ScrollForMultiDiscard> createState() => _ScrollForMultiDiscard();
 
 }
-class _ScrollForDestroy extends State<ScrollForDestroy> {
+class _ScrollForMultiDiscard extends State<ScrollForMultiDiscard> {
   int count = 0;
   List<CardModel>?  destroyCards = [];
 
@@ -41,27 +40,10 @@ class _ScrollForDestroy extends State<ScrollForDestroy> {
       BuildContext context,
       CardModel card,
       ) async {
-    print('на скролле для уничтожения');
+    print('на скролле для множественного сброса');
 
     if(count < widget.countDestroy) {
-      switch(card.type){
-        case CardClass.bonus:
-          await Player.destroyBonus(card, widget.roomName, widget.otherID);
-break;
-        case CardClass.unicorn:
-          await Player.destroyUnicorn(card, widget.roomName, widget.otherID);
-break;
-        case CardClass.fine:
-          await Player.destroyFine(card, widget.roomName, widget.otherID);
-          break;
-        case CardClass.baby:
-          await Player.destroyUnicorn(card, widget.roomName, widget.otherID);
-break;
-
-        default:
-          print('неизвестный тип карты');
-          break;
-      }
+      await PlayerState.removeCardFromPlayerDeck(widget.roomName, card, 'hand', widget.myID);
       setState(() {
         destroyCards?.remove(card); // Удаляем уничтоженную карту
       });
@@ -89,7 +71,7 @@ break;
               width: 110,
               margin: const EdgeInsets.all(5),
               child: GestureDetector(
-                onTap: () {
+                onTap: () async {
                   _onTap(context, destroyCards![index]);
                 },
                 onDoubleTap: () {
@@ -98,7 +80,6 @@ break;
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Image.asset(
-                      // widget.cards![index].imageUrl,
                       destroyCards![index].imageUrl,
                       fit: BoxFit.contain
                   ),

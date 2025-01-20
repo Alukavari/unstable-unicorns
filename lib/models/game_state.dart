@@ -53,7 +53,7 @@ print('добавили целую колоду куда-то');
     });
   }
 
-  static Future<void> removeNewGameDeck(
+  static Future<void> removeAllGameDeck(
       String roomName,
       String typeDeck) async {
 
@@ -75,7 +75,7 @@ print('добавили целую колоду куда-то');
   }
 
 // update deck
-  static Future<void> updateDeck(String roomName, List<CardModel> cards) async {
+  static Future<void> updateDeck(String roomName, List<CardModel> cards, String typeDeck) async {
     List<Map<String, dynamic>> cardData =
     cards.map((card) => card.toMap()).toList();
 
@@ -85,7 +85,8 @@ print('добавили целую колоду куда-то');
         .collection('GameState')
         .doc('state')
         .update({
-      'deck': cardData,
+      // 'deck': cardData,
+      typeDeck: cardData,
     });
   }
 

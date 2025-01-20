@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:unstable_unicorns/models/player_state.dart';
 import 'package:unstable_unicorns/provider/check_progress_provider.dart';
 import 'package:unstable_unicorns/services/dialog/dialog_window.dart';
 import 'package:unstable_unicorns/provider/game_data_provider.dart';
@@ -55,15 +56,18 @@ class _ButtonChangeState extends State<ButtonChange> {
         widget.otherID,
       );
 
+      await PlayerState.updatePlayerDeck(widget.roomName, [], 'effects', widget.otherID);
     } else{
       DialogWindow.show(
         context,
         'You didn\'t make a move',
-        'Notification',
+          titleForDialogWindow,
       );
     }
   } else {
-      DialogWindow.show(context, 'Wait, your opponent has not yet implemented the card action', 'Notification');
+      DialogWindow.show(context, 'Wait, your opponent has not yet implemented the card action',
+          titleForDialogWindow,
+      );
     }
     }
 

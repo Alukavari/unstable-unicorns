@@ -5,9 +5,7 @@ import 'package:unstable_unicorns/widgets/scroll/scroll_widget_bonuses.dart';
 
 import '../const/const.dart';
 import '../models/card.dart';
-import '../models/game.dart';
-import '../provider/current_player_provider.dart';
-import '../provider/game_data_provider.dart';
+
 
 class MyBonusesFines extends StatelessWidget {
   final String roomName;
@@ -85,6 +83,7 @@ class MyBonusesFines extends StatelessWidget {
                             cards: cards,
                             roomName: roomName,
                             myID: myID,
+                            otherID: otherID,
                           ),
                         ),
                       );
@@ -146,6 +145,7 @@ class MyBonusesFines extends StatelessWidget {
                                 cards: cards,
                                 roomName: roomName,
                                 myID: myID,
+                                otherID: otherID,
                               ),
                             ),
                           );

@@ -74,7 +74,7 @@ class MyStallWidget extends StatelessWidget {
                 return Expanded(
                   child: SizedBox(
                     height: 170,
-                    child: ScrollWidget(cards: cards),
+                    child: ScrollWidget(cards: cards, myID: myID, otherID: otherID, roomName: roomName),
                   ),
                 );
               }

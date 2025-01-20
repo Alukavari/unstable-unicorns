@@ -26,9 +26,7 @@ class DialogWithoutTPRU {
     Future<void> onHandTap()async{
       bool isEven = await Player.checkCardOnTableForDraw(roomName);
       String currentPlayer = Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer;
-      // print('мы на диалог без тпру перед сменой игрока');
 
-      // await Game.cleanActCount(roomName);
       await Game.changeGameStatus('inProcess', roomName);
       await Game.nextPlayer(
     roomName,
@@ -46,29 +44,20 @@ class DialogWithoutTPRU {
           otherID,
         );
 
-        // await Game.checkCountCardOnHand(
-        //   context,
-        //   roomName,
-        //   'hand',
-        //   Provider
-        //       .of<CurrentPlayerState>(context, listen: false)
-        //       .currentPlayer,
-        //   myID,
-        //   otherID,
-        // );
+      } else{
+        await Game.cleanActCount(roomName);
+
       }
-      await Game.cleanActCount(roomName);
-
       final deckCard = await GameState.getDeck(roomName, 'playingCardOnTable');
-
       if(deckCard.isNotEmpty){
         await GameState.addNewGameDeck(roomName, deckCard, 'discardPile');
-        await GameState.removeNewGameDeck(
+        await GameState.removeAllGameDeck(
           roomName,
           'playingCardOnTable',
         );
 
       }
+
 
     }
 
@@ -85,7 +74,7 @@ class DialogWithoutTPRU {
             child: SingleChildScrollView(
               child: ListBody(
                 children: <Widget>[
-                  Text('You don’t have TPRU',
+                  Text('You can\'t stop the move',
                       style: textForDialog, textAlign: TextAlign.center),
                   ElevatedButton(
                     onPressed: () async {

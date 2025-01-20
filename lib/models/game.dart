@@ -5,12 +5,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:unstable_unicorns/models/chek_possibility.dart';
 import 'package:unstable_unicorns/models/player.dart';
 import 'package:unstable_unicorns/models/player_state.dart';
-
+import 'package:unstable_unicorns/provider/check_progress_provider.dart';
 import 'package:unstable_unicorns/provider/discard_card_provider.dart';
-import 'package:unstable_unicorns/provider/game_play_out_card_status_provider.dart';
-
+import 'package:unstable_unicorns/provider/game_data_provider.dart';
+import '../const/const.dart';
 import '../provider/current_player_provider.dart';
 import '../services/dialog/dialog_for_finish.dart';
 import '../services/dialog/dialog_window.dart';
@@ -53,9 +54,6 @@ class Game {
       'gameCardStatus': 'nothing',
     });
 
-
-
-
     for (String playerID in players) {
       await PlayerState.setPlayerState(roomName, playerID);
     }
@@ -74,8 +72,6 @@ class Game {
       'lastActive': FieldValue.serverTimestamp(),
     });
   }
-
-
 
   //get current player
   static Future<String> currentPlayer(String roomName) async {
@@ -124,8 +120,7 @@ class Game {
     String roomName,
   ) async {
     final roomRef =
-        FirebaseFirestore.instance.collection(roomName).doc('room')
-            .update({
+        FirebaseFirestore.instance.collection(roomName).doc('room').update({
       'gameStatus': gameStatus,
       'lastActive': FieldValue.serverTimestamp(),
     });
@@ -133,8 +128,7 @@ class Game {
 
   static Future<String?> getGameStatus(String roomName) async {
     DocumentSnapshot snapshot =
-    await FirebaseFirestore.instance.collection(roomName).doc('room')
-        .get();
+        await FirebaseFirestore.instance.collection(roomName).doc('room').get();
 
     if (snapshot.exists) {
       Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
@@ -147,9 +141,9 @@ class Game {
   }
 
   static Future<void> updateGameCardStatus(
-      String roomName,
-      String newStatus,
-      ) async {
+    String roomName,
+    String newStatus,
+  ) async {
     final roomRef = FirebaseFirestore.instance
         .collection(roomName)
         .doc('room')
@@ -161,8 +155,8 @@ class Game {
   }
 
   static Future<String?> getGameCardStatus(
-      String roomName,
-      ) async {
+    String roomName,
+  ) async {
     final roomRef = await FirebaseFirestore.instance
         .collection(roomName)
         .doc('room')
@@ -242,6 +236,21 @@ class Game {
     });
   }
 
+  static Future<void> decreaseActCount(
+    String roomName,
+  ) async {
+    int? actCount = await getActCount(roomName) ?? 0;
+    final roomRef = FirebaseFirestore.instance
+        .collection(roomName)
+        .doc('room')
+        .collection('action')
+        .doc('state')
+        .update({
+      'actCount': actCount - 1,
+      'lastActive': FieldValue.serverTimestamp(),
+    });
+  }
+
   static Future<void> cleanCardAction(
     String roomName,
   ) async {
@@ -310,22 +319,21 @@ class Game {
     String roomName,
   ) async {
     final roomRef =
-        FirebaseFirestore.instance.collection(roomName).doc('room')
-            .update({
+        FirebaseFirestore.instance.collection(roomName).doc('room').update({
       'gameWin': currentPlayer,
       // 'lastActive': FieldValue.serverTimestamp(),
     });
   }
 
-
-
-  static Future<void> updatePlayOutCard(String roomName, CardModel? cards) async {
+  static Future<void> updatePlayOutCard(
+      String roomName, CardModel? cards) async {
     Map<String, dynamic>? newCardMaps = cards?.toMap();
 
     await FirebaseFirestore.instance.collection(roomName).doc('room').update({
       'drawCard': newCardMaps,
     });
-    print('сейчас обновляю игровую карту');}
+    print('сейчас обновляю игровую карту');
+  }
 
   static Future<CardModel?> getPlayOutCard(String roomName) async {
     DocumentSnapshot snapshot =
@@ -419,23 +427,35 @@ class Game {
       typeDeck,
       currentPlayer,
     );
+    List<CardModel>? bonuses = await PlayerState.getPlayerDeck(
+      roomName,
+      'effects',
+      currentPlayer,
+    );
+
     int countCardsOnHand = cardsOnHand?.length ?? 0;
     int difference = 0;
 
-    if (countCardsOnHand >= 0 && countCardsOnHand <= 7) {
+    if (Provider
+        .of<GameDataProvider>(context, listen: false)
+        .actCount == 0) {
+      return;
+    } else if (countCardsOnHand >= 0 &&
+        countCardsOnHand <= 7 && Provider
+        .of<ProgressCheckProvider>(context, listen: false)
+        .check == 0) {
       await Game.checkVictoryConditions(
         roomName,
         currentPlayer,
       );
-
       await Game.nextPlayer(
         roomName,
         currentPlayer,
         myID,
         otherID,
       );
-
       await Game.cleanActCount(roomName);
+      await CheckPossibility.checkHaveMiniStall(context, roomName, myID);
     } else {
       await Game.incrementActCount(roomName);
 
@@ -446,33 +466,50 @@ class Game {
       await DialogWindow.show(
         context,
         'You have more than 7 cards in your hand, discard $difference and pass the turn',
-        'Notification',
+        titleForDialogWindow,
       );
     }
   }
-
-
 
   static Future<void> checkVictoryConditions(
     String roomName,
     currentPlayer,
   ) async {
-    List<CardModel>? unicornsOnStall = await PlayerState.getPlayerDeck(
+    List<CardModel>?fines = await PlayerState.getPlayerDeck(
       roomName,
-      'stall',
+      'fines',
       currentPlayer,
     );
-    int countUnicorns = unicornsOnStall?.length ?? 0;
+    bool isEven = fines?.any((card) => card.name == 'ПАНДЕЦ') ?? false;
+    bool isEven1 = fines?.any((card) => card.name == 'СЛЕПЯЩИЙ СВЕТ') ?? false;
 
-    if (countUnicorns >= 7) {
-      await Game.changeWinner(
-        currentPlayer,
+    if (!isEven) {
+      List<CardModel>? unicornsOnStall = await PlayerState.getPlayerDeck(
         roomName,
+        'stall',
+        currentPlayer,
       );
 
-      await Game.changeGameStatus('finished', roomName);
+      int countUnicorns = unicornsOnStall?.length ?? 0;
+      bool isEven = unicornsOnStall!.any((card) => card.name == 'ЖИРНОРОГ');
+
+      if (countUnicorns >= 7) {
+        await Game.changeWinner(
+          currentPlayer,
+          roomName,
+        );
+
+        await Game.changeGameStatus('finished', roomName);
+      } else if (countUnicorns >= 5 && isEven && !isEven1) {
+        await Game.changeWinner(
+          currentPlayer,
+          roomName,
+        );
+        await Game.changeGameStatus('finished', roomName);
+      }
     }
   }
+
 
   static Future<void> exitGame(String roomName) async {
     await changeGameStatus('finished', roomName);
@@ -500,11 +537,8 @@ class Game {
         otherID,
         playersRoom,
       );
-
-      if (currentPlayer != myID) {
-          SnackBarService.showSnackBar(context, 'Player $otherPlayer makes a move', false);
-        }
-    } else if (gameStatus == 'finished') {
+    }
+    else if (gameStatus == 'finished') {
       String? gameWinner = myID == gameWin ? userNickname : otherPlayer;
 
       DialogForFinish.show(
@@ -517,20 +551,49 @@ class Game {
         myID,
         playersRoom,
       );
+    }
 
-    }else if (gameStatus == 'playOutSpell' && myID == Provider.of<CurrentPlayerState>(context, listen:false).currentPlayer) {
-        print('тулущий игрок через куррент $currentPlayer');
-        print('тулущий игрок через провайдер ${Provider.of<CurrentPlayerState>(context, listen:false).currentPlayer}');
-        CardModel? card = await Game.getPlayOutCard(playersRoom);
+    else if (gameStatus == 'playOutSpell'
+        && myID ==
+            Provider.of<CurrentPlayerState>(context, listen: false)
+                .currentPlayer
+    ) {
+      print('в статус гейм разыгрываем заклинание');
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+        await CardModel.playOutSpell(context, playersRoom, card, myID, otherID);
 
-        print('разыгрываемая карта в статус гейм ${card?.name}');
-if(card != null){
-  await CardModel.playOutSpell(context, playersRoom, card, myID, otherID);
-} else{
-  print('равно нулю разыгрываемая карта');
-}
-        // }
-      // }
+    }else if (gameStatus == 'playOutSpell'
+        && myID !=
+            Provider.of<CurrentPlayerState>(context, listen: false)
+                .currentPlayer
+    ) {
+      print('в статус гейм разыгрываем заклинание для не текущего игрока');
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+      await CardModel.playOutSpellForNoCurrentPlayer(context, playersRoom, card, myID, otherID);
+
+    } else if (gameStatus == 'playOutUnicorn' &&
+        myID != Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+      print('разыгрываемая карта в статус для нетекущего игркоа в единорожках ${card?.name}');
+      await CardModel.playOutUnicornForNoCurrentPlayer(context, playersRoom, card, myID, otherID);
+
+    }else if (gameStatus == 'playOutUnicorn' &&
+        myID == Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+      print('разыгрываемая карта в статус для текущего игрока ${card?.name}');
+      await CardModel.playOutUnicorn(context, playersRoom, card, myID, otherID);
+    }
+
+    else if (gameStatus == 'playOutBonuses' &&
+        myID == Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+      print('разыгрываемая карта в статус гейм ${card?.name}');
+      await CardModel.playOutBonuses(context, playersRoom, card, myID, otherID);
+
+
     }
   }
 }

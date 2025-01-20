@@ -23,7 +23,7 @@ class CustomButtonForDialog extends StatelessWidget {
           backgroundColor: Colors.white,
           shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-      child: Text(title,style: textBold),
+      child: Text(title,style: textBold, textAlign: TextAlign.center,),
     );
   }
 }

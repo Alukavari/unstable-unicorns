@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/models/game_state.dart';
+import 'package:unstable_unicorns/models/player_state.dart';
 import 'package:unstable_unicorns/provider/current_player_provider.dart';
 import '../const/const.dart';
 import '../models/card.dart';
@@ -40,6 +41,7 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
 
       if (cards.isNotEmpty) {
           if (Provider.of<GameDataProvider>(context, listen: false).actCount <= 1) {
+            await PlayerState.updatePlayerDeck(roomName, [], 'effects', widget.myID);
             DialogForDeck.show(
                 context,
                 countTakeCards,
@@ -51,7 +53,6 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
                 currentPlayer);
             await Game.incrementActCount(roomName);
           } else {
-            // SnackBarService.showSnackBar(context, 'You have already taken the card, change your turn', true);
 
             DialogWindow.show(context, 'You have already taken the card, change your turn', 'Ups..');
           }
@@ -104,7 +105,6 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
             return CardModel.fromMap(cardData);
           }).toList();
 
-          // print('мы в дек ${newCards.length}');
 
           if (newCards.length != _cards.length ||
               !_listEqual(_cards, newCards)) {

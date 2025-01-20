@@ -87,15 +87,11 @@ class PlayerState {
           i--;
         }
       }
-      // print('сколько осталось карт в колоде после первой раздачи ${deck.length}');
       CardModel cardFor1Player = deck.firstWhere((card) => card.type == CardClass.tpru);
-      // print('Добавляем карту тпру игрока 1: ${cardFor1Player.id}');
       player1CardsOnHand.add(cardFor1Player);
-      // print('сколько карт у 1 игрока после добавления тпру ${player1CardsOnHand.length}');
 
       deck.remove(cardFor1Player);
       for (var card in deck) {
-        // print('ID карты: после удаления ${card.id}');
       }
 
       try {
@@ -135,16 +131,14 @@ class PlayerState {
         if (!player1CardsOnHand.any((card) => card.id == deck[i].id) &&
             !player2CardsOnHand.any((card) => card.id == deck[i].id)) {
           deckForBD.add(deck[i]);
-          // print('какую карту добавляем ${deck[i].id}');
         }
       }
 
       // обновить колодe в firestore
       for (int i = 0; i < deckForBD.length; i++) {
-        // print('карты в дек для бд: ${deckForBD[i].id}');
       }
       try {
-        await GameState.updateDeck(roomName, deckForBD);
+        await GameState.updateDeck(roomName, deckForBD, 'deck');
       } catch (e) {
         print('Error in updating decks: $e');
       }
@@ -179,12 +173,12 @@ class PlayerState {
   }
 
   //add new cards PlayerDeck
-  static Future<void> addCardsPlayerDeck(
+  static Future<void> addCardPlayerDeck(
       String roomName,
-      CardModel newCards,
+      CardModel newCard,
       String typeDeck,
       String playerID) async {
-    Map<String, dynamic> newCardMaps = newCards.toMap();
+    Map<String, dynamic> newCardMap = newCard.toMap();
 
     await FirebaseFirestore.instance
         .collection(roomName)
@@ -194,7 +188,7 @@ class PlayerState {
         .collection('playersState')
         .doc(playerID)
         .update({
-      typeDeck: FieldValue.arrayUnion([newCardMaps]),
+      typeDeck: FieldValue.arrayUnion([newCardMap]),
     });
 
   }
@@ -218,32 +212,5 @@ class PlayerState {
   }
 
 
-  //забрать карту из сброса на руки
-  static Future<void> takeCardPile(
-    BuildContext context,
-    String roomName,
-    String currentPlayer,
-    String typeGameDeck,
-    String typePlayerDeck,
-    int countTake,
-    String myID,
-    String otherID,
-    CardModel newCards,
-  ) async {
-//добавляем карту в руки игроку
-    await PlayerState.addCardsPlayerDeck(
-      roomName,
-      newCards,
-      'hand',
-      // 'discardPile',
-      currentPlayer,
-    );
-//удаляем карту из колоды сброса
-    await GameState.removeCardGameDeck(
-      roomName,
-      newCards,
-      'discardPile',
-    );
-  }
 
 }

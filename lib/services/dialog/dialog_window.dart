@@ -7,7 +7,8 @@ import '../../const/colors.dart';
 class DialogWindow {
   static Future<void> show(BuildContext context,
       String message,
-      String title) async {
+      String title
+      ) async {
 
     showDialog<void>(
       context: context,

@@ -100,7 +100,7 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
     await _getPlayerHashcode();
     if (otherPlayer.isNotEmpty && myID.isNotEmpty && otherID.isNotEmpty) {
       await Game.startGame(widget.playersRoom, otherID, myID);
-      await GameState.updateDeck(widget.playersRoom, allDeck);
+      await GameState.updateDeck(widget.playersRoom, allDeck, 'deck');
       await PlayerState.drawnCards(
           widget.playersRoom, context, uniDeck, allDeck, 5, myID, otherID);
       currentPlayer = await Game.currentPlayer(widget.playersRoom);

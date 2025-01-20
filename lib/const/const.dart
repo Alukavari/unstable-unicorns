@@ -11,3 +11,5 @@ TextStyle textForFB = GoogleFonts.ribeye(fontWeight: FontWeight.w700, fontSize: 
 TextStyle textBoldWhite = GoogleFonts.ribeye(fontWeight: FontWeight.w700, fontSize: 18, color: Colors.white,);
 TextStyle textBoldUnderline = GoogleFonts.ribeye(fontWeight: FontWeight.w500, fontSize: 18, color: Colors.white, decoration: TextDecoration.underline, decorationColor: Colors.white);
 TextStyle textForSnackBar = GoogleFonts.ribeye(fontWeight: FontWeight.w200, fontSize: 15, color: Colors.white);
+
+String titleForDialogWindow = 'Notification';

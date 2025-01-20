@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:unstable_unicorns/models/deck.dart';
-import 'package:unstable_unicorns/models/player.dart';
 import 'package:unstable_unicorns/models/player_state.dart';
 import '../../models/card.dart';
 import '../../models/game.dart';
+import '../../models/player.dart';
 import '../../services/dialog/dialog_window.dart';
 
-class ScrollForGame extends StatefulWidget {
+class ScrollForMovingCard extends StatelessWidget {
   List<CardModel>? cards;
   String roomName;
   String myID;
@@ -14,7 +14,7 @@ class ScrollForGame extends StatefulWidget {
   Function (BuildContext context, CardModel? card) onCardTap; // Функция обратного вызова для onTap
 
 
-  ScrollForGame({
+  ScrollForMovingCard({
     super.key,
     required this.cards,
     required this.roomName,
@@ -23,24 +23,20 @@ class ScrollForGame extends StatefulWidget {
     required this.onCardTap,
   });
 
-  @override
-  State<ScrollForGame> createState() => _ScrollForGame();
 
-}
-class _ScrollForGame extends State<ScrollForGame> {
   int count = 0;
 
   void _onTap(
-    BuildContext context,
-    CardModel? card,
-  ) async {
-    if(count < widget.countDiscard) {
-      await widget.onCardTap!(context, card);
-      await Game.incrementCardAction(widget.roomName);
+      BuildContext context,
+      CardModel? card,
+      ) async {
+    if(count < countDiscard) {
+      await onCardTap(context, card);
+      await Game.incrementCardAction(roomName);
       count++;
-      if(count >= widget.countDiscard ){
-        await Game.cleanCardAction(widget.roomName);
-          await PlayerState.removeCardFromPlayerDeck(widget.roomName, card!, 'stall', widget.myID);
+      if(count >= countDiscard ){
+        await Game.cleanCardAction(roomName);
+        await PlayerState.removeCardFromPlayerDeck(roomName, card!, 'stall', myID);
         Navigator.of(context).pop();
       }
     }
@@ -55,23 +51,23 @@ class _ScrollForGame extends State<ScrollForGame> {
         child: ListView.builder(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
-          itemCount: widget.cards?.length,
+          itemCount: cards?.length,
           itemBuilder: (context, index) {
             return Container(
               width: 110,
               margin: const EdgeInsets.all(5),
               child: GestureDetector(
                 onTap: () {
-                    _onTap(context, widget.cards![index]);
+                  _onTap(context, cards![index]);
                 },
                 onDoubleTap: () {
                   DialogWindow.show(
-                      context, widget.cards![index].description, widget.cards![index].name);
+                      context, cards![index].description, cards![index].name);
                 },
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Image.asset(
-                    widget.cards![index].imageUrl,
+                      cards![index].imageUrl,
                       fit: BoxFit.contain
                   ),
                 ),

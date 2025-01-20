@@ -22,31 +22,29 @@ class BuildDiscardPileWidget extends StatelessWidget {
 
   List<CardModel> _cards = [];
 
-  void _handleTap(
-    BuildContext context,
-    List<CardModel> cards,
-    int countTakeCards,
-    String roomName,
-    String currentPlayer,
-  ) {
-    // print('сколько каунт в сбрсое ${Provider
-    //     .of<GameDataProvider>(context, listen: false)
-    //     .actCount}');
-    if (Provider
-        .of<GameDataProvider>(context, listen: false)
-        .actCount == 3) {
-      DialogForDeck.show(
-          context,
-          countTakeCards,
-          'Add this card',
-          roomName,
-          cards,
-          'hand',
-          'deck',
-          currentPlayer);
-      print('на выполнении нажатия на сброс');
-    }
-  }
+  // void _handleTap(
+  //   BuildContext context,
+  //   List<CardModel> cards,
+  //   int countTakeCards,
+  //   String roomName,
+  //   String currentPlayer,
+  // )
+  // {
+  //   if (Provider
+  //       .of<GameDataProvider>(context, listen: false)
+  //       .actCount == 3) {
+  //     DialogForDeck.show(
+  //         context,
+  //         countTakeCards,
+  //         'Add this card',
+  //         roomName,
+  //         cards,
+  //         'hand',
+  //         'deck',
+  //         currentPlayer);
+  //     print('на выполнении нажатия на сброс');
+  //   }
+  // }
 
     bool _listEqual(List<CardModel> a, List<CardModel> b) {
       if (a.length != b.length) return false;
@@ -103,16 +101,7 @@ class BuildDiscardPileWidget extends StatelessWidget {
                   final isMyTurn = currentPlayer == myID;
 
                   return GestureDetector(
-                    onTap: isMyTurn
-                        ? () =>
-                        _handleTap(
-                          context,
-                          _cards,
-                          countTakeCards,
-                          roomName,
-                          currentPlayer,
-                        )
-                        : null,
+                    onTap: null,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: cardsPile.isNotEmpty

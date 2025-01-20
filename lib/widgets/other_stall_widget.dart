@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:unstable_unicorns/widgets/scroll/scroll_widget.dart';
+import 'package:unstable_unicorns/widgets/scroll/scroll_widget_other.dart';
 
 import '../const/const.dart';
 import '../models/card.dart';
@@ -68,7 +68,7 @@ class StallWidget extends StatelessWidget {
                 return Expanded(
                   child: SizedBox(
                     height: 170,
-                    child: ScrollWidget(cards: cards),
+                    child: ScrollWidgetOtherPlayer(cards: cards),
                   ),
                 );
                 // children: [ScrollWidget(cards: cards)]));

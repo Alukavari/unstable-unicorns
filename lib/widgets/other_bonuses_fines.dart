@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:unstable_unicorns/widgets/scroll/scroll_other_bonuses.dart';
 import 'package:unstable_unicorns/widgets/scroll/scroll_widget_bonuses.dart';
 import 'package:unstable_unicorns/widgets/scroll/scroll_widget_fines.dart';
 
@@ -144,7 +145,7 @@ class OtherBonusesFines extends StatelessWidget {
                           return Expanded(
                             child: SizedBox(
                               height: 40,
-                              child: ScrollWidgetBonuses(
+                              child: ScrollWidgetOtherBonuses(
                                 cards: _bonuses,
                                 roomName: roomName,
                                 myID: myID,
