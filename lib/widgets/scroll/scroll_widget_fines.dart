@@ -29,7 +29,8 @@ class ScrollWidgetFines extends StatelessWidget {
             child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  color: Colors.white,
+                  // color: Colors.white,
+                  color: Colors.amber[400],
                   width: 80,
                   height: 30,
                   child: Center(child: Text(cards[index].name, style: textForFB, textAlign: TextAlign.center)),

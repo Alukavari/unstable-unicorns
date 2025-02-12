@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/provider/check_progress_provider.dart';
-import 'package:unstable_unicorns/provider/game_play_out_card_status_provider.dart';
+import 'package:unstable_unicorns/provider/remember_card.dart';
 
 import '../provider/game_data_provider.dart';
 

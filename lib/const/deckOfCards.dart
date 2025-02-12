@@ -10,9 +10,9 @@ Map<String, String> cardDescription = {
 
 
   'assets/1ff.png' : 'СЛЕПЯЩИЙ СВЕТ',
-  'assets/3ff.png' : 'ПАНДЕЦ',
-  'КОЛЮЧАЯ ПРОВОЛКА' : 'Discard 1 card',
-  'МИНИ-СТОЙЛО' :  'You have more than 5 unicorns in your stall, discard',
+  'ПАНДЕЦ' : 'Unicorns cannot be destroyed or sacrificed, they are all pandas',
+  'КОЛЮЧАЯ ПРОВОЛКА' : 'You have fine КОЛЮЧАЯ ПРОВОЛКА. Discard 1 card',
+  'МИНИ-СТОЙЛО' :  'You have more than 5 unicorns in your stall, sacrifice',
 
 
 
@@ -41,7 +41,7 @@ Map<String, String> cardDescription = {
   'НОСОРОГОРОГ' : 'Destroy 1 unicorn',
   'ЛАМАРОГ' : 'Discard 1 card',
   'ЖИРНОРОГ' : 'You cannot use TПРУ',
-  'assets/8u.png' : 'ЧЕРНЫЙ БРОНЕРОГ',
+  'ЧЕРНЫЙ БРОНЕРОГ' : 'You can sacrifice the armored horn and save the card',
   'АМЕРИРОГ' : 'Choose 1 card',
   'АКУЛОРОГ' : 'When АКУЛОРОГ in you stall you can sacrifice the card and destroy 1 unicorn',
   'КРУШЕРОГ' : 'Sacrifice 1 unicorn',
@@ -55,5 +55,5 @@ Map<String, String> cardDescription = {
   'ПОЧАТОК РОГ' : 'Discard 1 card',
   'ПАФОСНЫЙ КРЫЛОРОГ' : 'Choose the unicorn you want',
   'РУСАЛКОРОГ' : 'Return 1 card to hand',
-  'assets/25u.png' : 'ФЕНИКСОРОГ',
+  'ФЕНИКСОРОГ' : 'You can discard 1 card instead of destroying ФЕНИКСОРОГ',
 };

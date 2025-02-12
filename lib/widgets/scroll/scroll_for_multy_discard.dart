@@ -43,7 +43,7 @@ class _ScrollForMultiDiscard extends State<ScrollForMultiDiscard> {
     print('на скролле для множественного сброса');
 
     if(count < widget.countDestroy) {
-      await PlayerState.removeCardFromPlayerDeck(widget.roomName, card, 'hand', widget.myID);
+      await Player.cardDiscard(context, widget.roomName, card, widget.myID);
       setState(() {
         destroyCards?.remove(card); // Удаляем уничтоженную карту
       });
@@ -62,11 +62,14 @@ class _ScrollForMultiDiscard extends State<ScrollForMultiDiscard> {
       backgroundColor: Colors.white,
       content: SizedBox(
         width: 110, //
-        child: ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: destroyCards?.length,
-          itemBuilder: (context, index) {
+        child: SingleChildScrollView(
+        child: Column(
+        children: List.generate(destroyCards!.length ?? 0, (index) {
+        // child: ListView.builder(
+        //   physics: const NeverScrollableScrollPhysics(),
+        //   shrinkWrap: true,
+        //   itemCount: destroyCards?.length,
+        //   itemBuilder: (context, index) {
             return Container(
               width: 110,
               margin: const EdgeInsets.all(5),
@@ -89,7 +92,11 @@ class _ScrollForMultiDiscard extends State<ScrollForMultiDiscard> {
           },
         ),
       ),
+    ),
+        //add
+    ),
     );
+    //add
   }
 }
 

@@ -45,8 +45,10 @@ class DialogForGameChoose {
                       child: ElevatedButton(
                         onPressed: () async {
                           print('мы тут нажали кнопку отдать бонус');
+                          Navigator.of(dialogContext).pop();
+
                           showDialog(
-                            context: dialogContext,
+                            context: context,
                             builder: (BuildContext innerDialogContext) {
                               return AlertDialog(
                                   backgroundColor: Colors.white,
@@ -56,14 +58,11 @@ class DialogForGameChoose {
                                       Center(
                                       child: content1),
           ]
-                                // здесь отображается ваш второй контент
-
                                   ),
                                   ),
                               );
                             },
                           );
-                          Navigator.of(dialogContext).pop();
                         },
                         style: ElevatedButton.styleFrom(
                             backgroundColor: bgColor,
@@ -78,6 +77,7 @@ class DialogForGameChoose {
                       child: ElevatedButton(
                         onPressed: () async {
                           print('мы тут нажали кнопку забрать бонус');
+                          Navigator.of(dialogContext).pop();
                           showDialog(
                             context: dialogContext,
                             builder: (BuildContext innerDialogContext) {
@@ -96,8 +96,6 @@ class DialogForGameChoose {
                               );
                             },
                           );
-                          Navigator.of(dialogContext).pop();
-
                         },
                         style: ElevatedButton.styleFrom(
                             backgroundColor: bgColor,

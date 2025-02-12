@@ -6,6 +6,7 @@ import 'package:unstable_unicorns/models/player_state.dart';
 import 'package:unstable_unicorns/provider/current_player_provider.dart';
 import '../const/const.dart';
 import '../models/card.dart';
+import '../models/chek_possibility.dart';
 import '../models/game.dart';
 import '../services/dialog/dialog_for_deck.dart';
 import '../services/dialog/dialog_window.dart';
@@ -37,12 +38,16 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
       List<CardModel> cards,
       int countTakeCards,
       String roomName,
-      String currentPlayer,) async {
+      String currentPlayer,
+      String myID,
+      ) async {
+
 
       if (cards.isNotEmpty) {
-          if (Provider.of<GameDataProvider>(context, listen: false).actCount <= 1) {
-            await PlayerState.updatePlayerDeck(roomName, [], 'effects', widget.myID);
-            DialogForDeck.show(
+          if (Provider
+              .of<GameDataProvider>(context, listen: false)
+              .actCount <= 1) {
+            await DialogForDeck.show(
                 context,
                 countTakeCards,
                 'Add this card',
@@ -53,10 +58,12 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
                 currentPlayer);
             await Game.incrementActCount(roomName);
           } else {
-
-            DialogWindow.show(context, 'You have already taken the card, change your turn', 'Ups..');
+            await DialogWindow.show(
+                context, 'You have already taken the card, change your turn',
+                'Ups..');
           }
-      } else {
+      }else {
+        print('диалоговое окно и подсчет финала в дек виджет о том что нет карт');
         await Game.checkVictoryConditions(
             widget.roomName,
             currentPlayer
@@ -130,7 +137,8 @@ class _BuildDeckWidgetState extends State<BuildDeckWidget> {
                                 _cards,
                                 widget.countTakeCards,
                                 widget.roomName,
-                                currentPlayer)
+                                currentPlayer,
+                            widget.myID)
                             : () =>
                             DialogWindow.show(
                                 context, 'Wait your turn', 'Ups..'),

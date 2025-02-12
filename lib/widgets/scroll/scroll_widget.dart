@@ -43,34 +43,36 @@ String roomName;
     if (Provider
         .of<GameDataProvider>(context, listen: false)
         .actCount == 0) {
-      if (!isEvenPandec || isEvenSun) {
-        if (newCard.name == 'НОСОРОГОРОГ' && !isEven) {
-          print(
-              'не разыгрываем носрога рога из-за того что нет единорожков для угичтожения');
-          await DialogWindow.show(
-              context, checkText['НОСОРОГОРОГ1']!, titleForDialogWindow);
+      if (newCard.name == 'НОСОРОГОРОГ') {
+        if (isEvenPandec && isEvenSun) {
+          if (!isEven) {
+            print(
+                'не разыгрываем носрога рога из-за того что нет единорожков для угичтожения');
+            await DialogWindow.show(
+                context, checkText['НОСОРОГОРОГ1']!, titleForDialogWindow);
+          } else if (newCard.name == 'НОСОРОГОРОГ') {
+            await Game.updatePlayOutCard(
+              roomName,
+              newCard,
+            );
+            await Player.playCard(
+              context,
+              roomName,
+              currentPlayer,
+              myID,
+              otherID,
+            );
+          }
         } else {
-          await Game.updatePlayOutCard(
-            roomName,
-            newCard,
-          );
-          await Player.playCard(
-            context,
-            roomName,
-            currentPlayer,
-            myID,
-            otherID,
-          );
+          await DialogWindow.show(
+              context, checkText['НОСОРОГОРОГ2']!, titleForDialogWindow);
         }
-      }else {
-        await DialogWindow.show(
-            context, checkText['НОСОРОГОРОГ1']!, titleForDialogWindow);
       }
-    } else{
-      await DialogWindow.show(
-          context, checkText['НОСОРОГОРОГ1']!, titleForDialogWindow);
-
     }
+    // else {
+    //   await DialogWindow.show(
+    //       context, checkText['НОСОРОГОРОГ']!, titleForDialogWindow);
+    // }
   }
 
 

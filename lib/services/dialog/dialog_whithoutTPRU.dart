@@ -24,6 +24,7 @@ class DialogWithoutTPRU {
   ) {
 
     Future<void> onHandTap()async{
+      await Game.changeGameStatus('inProcess', roomName);
       bool isEven = await Player.checkCardOnTableForDraw(roomName);
       String currentPlayer = Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer;
 
@@ -36,6 +37,8 @@ class DialogWithoutTPRU {
     );
 
       if (!isEven) {
+        print(' разыгрывет карту в диалоге bez tpru');
+
         await Player.activateCard(
           context,
           newCard!,
@@ -45,19 +48,18 @@ class DialogWithoutTPRU {
         );
 
       } else{
+        print('не разыгырваем карту в диалоге без тпру');
         await Game.cleanActCount(roomName);
-
       }
       final deckCard = await GameState.getDeck(roomName, 'playingCardOnTable');
-      if(deckCard.isNotEmpty){
+
+      if (deckCard.isNotEmpty && newCard!.name != 'НОСОРОГОРОГ') {
         await GameState.addNewGameDeck(roomName, deckCard, 'discardPile');
+      }
         await GameState.removeAllGameDeck(
           roomName,
           'playingCardOnTable',
         );
-
-      }
-
 
     }
 
@@ -76,6 +78,12 @@ class DialogWithoutTPRU {
                 children: <Widget>[
                   Text('You can\'t stop the move',
                       style: textForDialog, textAlign: TextAlign.center),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                        newCard!.imageUrl,
+                        fit: BoxFit.cover),
+                  ),
                   ElevatedButton(
                     onPressed: () async {
                       try {

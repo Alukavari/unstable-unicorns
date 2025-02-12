@@ -1,13 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:unstable_unicorns/screens/create_room_screen.dart';
-import 'package:unstable_unicorns/screens/game_board_screen.dart';
+import 'package:unstable_unicorns/screens/loading_screen.dart';
 import 'package:unstable_unicorns/screens/lobby.dart';
 import 'package:unstable_unicorns/services/responsive.dart';
 import 'package:unstable_unicorns/widgets/button/custom_button.dart';
 import 'package:unstable_unicorns/widgets/custom_text.dart';
-
 import '../const/colors.dart';
 import '../const/const.dart';
 import '../services/snack_bar.dart';
@@ -17,7 +14,6 @@ class JoinRoom extends StatelessWidget {
   final String userCredential;
   final String userNickname;
 
-  // JoinRoom({super.key, required this.email, required this.userNickname});
   JoinRoom({super.key, required this.userCredential, required this.userNickname, required this.email});
 
   List<Map<String, dynamic>> rooms = [];
@@ -26,7 +22,7 @@ class JoinRoom extends StatelessWidget {
   Future<void> _addUser(
       BuildContext context,
       String roomName,
-      String deleteNameRoom
+      String deleteNameRoom,
       ) async {
     final playerRef = firestore.collection(roomName);
     final QuerySnapshot snapshot = await playerRef.get();
@@ -54,15 +50,10 @@ class JoinRoom extends StatelessWidget {
 
         if (playerCount == 2) {
           await firestore.collection('user room').doc(deleteNameRoom).delete();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => GameBoardScreen(
-                playersRoom: roomName,
-                userNickname: userNickname,
-              ),
-            ),
-          );
+          await LoadingScreen.navigateAndPerformActions(context,
+            roomName,
+            userCredential,
+            userNickname,);
         }
       } catch (e) {
         SnackBarService.showSnackBar(
@@ -116,24 +107,22 @@ class JoinRoom extends StatelessWidget {
                           }).toList() ??
                           [];
                       return Responsive(
-                        // child: Expanded(
                         child: Column(
                           children: rooms.map<Widget>((room) {
-                            // return Expanded(
                             return ListTile(
                               title: Text(
                                 room['user_nickname'] ?? [],
                                 style: textBold,
                               ),
-                              // subtitle: Expanded(
                               subtitle: Row(
                                 children: [
                                   Expanded(
                                     child: ElevatedButton(
-                                        onPressed: () => _addUser(
+                                        onPressed: () =>
+                                            _addUser(
                                             context,
                                             '${room['user_nickname']}_${room['name_room']}',
-                                            room['playerID']),
+                                room['playerID']),
                                         style: ElevatedButton.styleFrom(
                                             foregroundColor: bgColor,
                                             backgroundColor: Colors.white,

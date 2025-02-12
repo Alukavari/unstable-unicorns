@@ -15,25 +15,70 @@ import '../../models/player.dart';
 import '../../models/player_state.dart';
 import '../../widgets/button/custom_button_for_dialog.dart';
 
-class DialogForTPRU {
+class DialogForKillTPRU {
   static Future<void> show(
-    BuildContext context,
-    CardModel tpru,
-    String currentPlayer,
-    String myID,
-    String otherID,
-    CardModel? newCard,
-    String roomName,
-  ) {
-
+      BuildContext context,
+      String currentPlayer,
+      String myID,
+      String otherID,
+      CardModel? newCard,
+      CardModel? tpru,
+      CardModel? killTpru,
+      List<CardModel>? handCards,
+      String roomName,
+      ) {
+    //убойное тпру
     Future<void> onHandTap() async {
-      print('в диалоге фор тпру');
-
-      bool isEven = tpru.id == '15tpru' ? true : false;
+      //разыграть убойное тпру
+      await Game.changeGameStatus('inProcess', roomName);
       //разыграть тпру
       await GameState.updateWithNewCardGameDeck(
         roomName,
-        tpru,
+        killTpru!,
+        'playingCardOnTable',
+      );
+      //удалить тпру с рук
+      await PlayerState.removeCardFromPlayerDeck(
+        roomName,
+        killTpru,
+        'hand',
+        Provider
+            .of<CurrentPlayerState>(context, listen: false)
+            .currentPlayer,
+      );
+
+      bool isDrawnCard = await Player.checkCardOnTableForDraw(roomName);
+
+      if (!isDrawnCard) {
+        await Player.activateCard(
+          context,
+          newCard!,
+          roomName,
+          myID,
+          otherID,
+        );
+      }
+      await Game.cleanActCount(roomName);
+      print('обнуляем коунт после розыгрыша карты ${Provider
+          .of<GameDataProvider>(context, listen: false)
+          .actCount}');
+
+      final deckCard = await GameState.getDeck(roomName, 'playingCardOnTable');
+
+      if (deckCard.isNotEmpty && newCard!.name != 'НОСОРОГОРОГ') {
+        await GameState.addNewGameDeck(roomName, deckCard, 'discardPile');
+      }
+      await GameState.removeAllGameDeck(
+        roomName,
+        'playingCardOnTable',
+      );
+
+    }
+    //разыграть обычное тпру
+    Future<void> onHandTapTwo () async {
+      await GameState.updateWithNewCardGameDeck(
+        roomName,
+        tpru!,
         'playingCardOnTable',
       );
       //удалить тпру с рук
@@ -41,65 +86,22 @@ class DialogForTPRU {
         roomName,
         tpru,
         'hand',
-        Provider
-            .of<CurrentPlayerState>(context, listen: false)
-            .currentPlayer,
+        Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
       );
 
-      if (isEven) {
-        bool isDrawnCard = await Player.checkCardOnTableForDraw(roomName);
-        await Game.changeGameStatus('inProcess', roomName);
-
-        if (!isDrawnCard) {
-          await Player.activateCard(
-            context,
-            newCard!,
-            roomName,
-            myID,
-            otherID,
-          );
-        }
-        await Game.cleanActCount(roomName);
-        print(
-            'обнуляем коунт после розыгрыша карты ${Provider
-                .of<GameDataProvider>(context, listen: false)
-                .actCount}');
-
-        final deckCard =
-        await GameState.getDeck(roomName, 'playingCardOnTable');
-
-        if (deckCard.isNotEmpty && newCard!.name != 'НОСОРОГОРОГ') {
-          await GameState.addNewGameDeck(roomName, deckCard, 'discardPile');
-        }
-        await GameState.removeAllGameDeck(
-          roomName,
-          'playingCardOnTable',
-        );
-
-        await Game.nextPlayer(
-          roomName,
-          Provider
-              .of<CurrentPlayerState>(context, listen: false)
-              .currentPlayer,
-          myID,
-          otherID,
-        );
-      }
-
-      // else {
-      // onPressedNextPlayer
+      //onPressedNextPlayer
       await Game.nextPlayer(
         roomName,
-        Provider
-            .of<CurrentPlayerState>(context, listen: false)
-            .currentPlayer,
+        Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer,
         myID,
         otherID,
       );
-  }
 
-    Future<void> onHandTapTwo() async {
-      // выйграна ли битва тпру разыгрываем ли мы карту
+    }
+
+    //вообще не разыгрывать тпру
+    Future<void> onHandTapThree() async {
+      //не разыгрывтаь тпру вообще
       bool isEven = await Player.checkCardOnTableForDraw(roomName);
       print('выйграна ли битва тпру разыгрываем ли мы карту $isEven');
       await Game.changeGameStatus('inProcess', roomName);
@@ -134,6 +136,7 @@ class DialogForTPRU {
 
     }
 
+
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -150,17 +153,18 @@ class DialogForTPRU {
                   child: ListBody(
                     children: <Widget>[
                       Text(
-                          'You have TPRU cards, do you want to cancel the card ${newCard!.name}?',
-                              // ' Description: ${newCard!.description}"',
+                          'You have TPRU card, do you want to cancel the card ${newCard!.name}?',
+                              // ' Description: "${newCard!.description}"',
                           style: textForDialog,
                           textAlign: TextAlign.center),
+
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: Image.asset(
                             newCard!.imageUrl,
                             fit: BoxFit.cover),
                       ),
-                      Row(
+                      Column(
                         children: [
                           ElevatedButton(
                             onPressed: () async {
@@ -177,13 +181,31 @@ class DialogForTPRU {
                                 backgroundColor: bgColor,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10))),
+                            child: Text('play kill TPRU', style: textBoldWhite),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () async {
+                              // print('мы тут разыгрываем тпру');
+                              try {
+                                onHandTapTwo();
+                              } catch (e) {
+                                print('Error playing TPRU: $e');
+                              } finally {
+                                Navigator.of(dialogContext).pop();
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: bgColor,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10))),
                             child: Text('play TPRU', style: textBoldWhite),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(height: 10),
                           ElevatedButton(
                             onPressed: () async {
                               try {
-                                onHandTapTwo();
+                                onHandTapThree();
                               } catch (e) {
                               } finally {
                                 Navigator.of(dialogContext).pop();
@@ -195,12 +217,13 @@ class DialogForTPRU {
                                     borderRadius: BorderRadius.circular(10))),
                             child: Text('no', style: textBoldWhite),
                           ),
+
+                        ]
+                      ),
                         ],
                       ),
-                    ],
                   ),
                 ),
-              ),
             );
           },
         );

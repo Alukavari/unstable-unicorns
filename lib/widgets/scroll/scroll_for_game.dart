@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:unstable_unicorns/models/deck.dart';
-import 'package:unstable_unicorns/models/player.dart';
-import 'package:unstable_unicorns/models/player_state.dart';
 import '../../models/card.dart';
 import '../../models/game.dart';
 import '../../services/dialog/dialog_window.dart';
 
-class ScrollForGame extends StatefulWidget {
+class ScrollForGame extends StatelessWidget {
   List<CardModel>? cards;
   String roomName;
   String myID;
@@ -23,24 +20,18 @@ class ScrollForGame extends StatefulWidget {
     required this.onCardTap,
   });
 
-  @override
-  State<ScrollForGame> createState() => _ScrollForGame();
-
-}
-class _ScrollForGame extends State<ScrollForGame> {
   int count = 0;
 
   void _onTap(
     BuildContext context,
     CardModel? card,
   ) async {
-    if(count < widget.countDiscard) {
-      await widget.onCardTap!(context, card);
-      await Game.incrementCardAction(widget.roomName);
+    if(count < countDiscard) {
+      await onCardTap!(context, card);
+      await Game.incrementCardAction(roomName);
       count++;
-      if(count >= widget.countDiscard ){
-        await Game.cleanCardAction(widget.roomName);
-          await PlayerState.removeCardFromPlayerDeck(widget.roomName, card!, 'stall', widget.myID);
+      if(count >= countDiscard ){
+        await Game.cleanCardAction(roomName);
         Navigator.of(context).pop();
       }
     }
@@ -51,33 +42,47 @@ class _ScrollForGame extends State<ScrollForGame> {
     return AlertDialog(
       backgroundColor: Colors.white,
       content: SizedBox(
-        width: 110, //
-        child: ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: widget.cards?.length,
-          itemBuilder: (context, index) {
+        width: 120, //
+        child: SingleChildScrollView(
+        child: Column(
+        children: List.generate(cards?.length ?? 0, (index) {
+        // child: ListView.builder(
+        //   physics: const NeverScrollableScrollPhysics(),
+        //   shrinkWrap: true,
+        //   // itemCount: widget.cards?.length,
+        //   itemCount: cards?.length,
+        //   itemBuilder: (context, index) {
             return Container(
-              width: 110,
+              width: 120,
               margin: const EdgeInsets.all(5),
               child: GestureDetector(
-                onTap: () {
-                    _onTap(context, widget.cards![index]);
+                onTap:  () {
+                  if (cards!.isNotEmpty ?? false) {
+                    _onTap(context, cards![index]);
+                  } else {
+                    DialogWindow.show(
+                        context, 'No cards for action', 'Notification');
+                  }
                 },
-                onDoubleTap: () {
-                  DialogWindow.show(
-                      context, widget.cards![index].description, widget.cards![index].name);
-                },
-                child: ClipRRect(
+                  onDoubleTap:
+                      () {
+                    DialogWindow.show(
+                      // context, widget.cards![index].description, widget.cards![index].name);
+                        context, cards![index].description, cards![index].name);
+                  },
+                  child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Image.asset(
-                    widget.cards![index].imageUrl,
-                      fit: BoxFit.contain
+                  cards![index].imageUrl,
+                  fit: BoxFit.
+                  contain
                   ),
-                ),
-              ),
+                  ),
+        )
             );
-          },
+                }
+            )
+        ),
         ),
       ),
     );

@@ -40,7 +40,7 @@ class _ScrollForSacrifice extends State<ScrollForSacrifice> {
 
       } else if(
       card?.type == CardClass.unicorn || card?.type == CardClass.baby){
-        await Player.sacrificeUnicorn(widget.roomName, card, widget.myID);
+        await Player.sacrificeUnicorn(context, widget.roomName, card, widget.myID);
       } else if(
       card?.type == CardClass.fine){
         await Player.sacrificeFines(card, widget.roomName, widget.myID);
@@ -62,12 +62,15 @@ class _ScrollForSacrifice extends State<ScrollForSacrifice> {
       backgroundColor: Colors.white,
       content: SizedBox(
         width: 110, //
-        child: ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          // itemCount: cards.length,
-          itemCount: widget.cards?.length,
-          itemBuilder: (context, index) {
+        child: SingleChildScrollView(
+        child: Column(
+        children: List.generate(widget.cards?.length ?? 0, (index) {
+        // child: ListView.builder(
+        //   physics: const NeverScrollableScrollPhysics(),
+        //   shrinkWrap: true,
+        //   // itemCount: cards.length,
+        //   itemCount: widget.cards?.length,
+        //   itemBuilder: (context, index) {
             return Container(
               width: 110,
               margin: const EdgeInsets.all(5),
@@ -91,7 +94,11 @@ class _ScrollForSacrifice extends State<ScrollForSacrifice> {
           },
         ),
       ),
+    ),
+        //add
+        ),
     );
+    //add
   }
 }
 

@@ -13,12 +13,13 @@ import 'package:unstable_unicorns/services/dialog/dialog_for_no.dart';
 import 'package:unstable_unicorns/services/dialog/dialog_window.dart';
 import 'package:unstable_unicorns/widgets/scroll/scroll_for_destroy.dart';
 import 'package:unstable_unicorns/widgets/scroll/scroll_for_game.dart';
-import 'package:unstable_unicorns/widgets/scroll/scroll_for_moving_card.dart';
 import 'package:unstable_unicorns/widgets/scroll/scroll_for_multy_discard.dart';
 import 'package:unstable_unicorns/widgets/scroll/scroll_for_sacrifice.dart';
 import '../const/const.dart';
 import '../const/deckOfCards.dart';
 import '../const/text_for_check_dialog.dart';
+import '../provider/discard_card_provider.dart';
+import '../services/dialog/dialog_for_function.dart';
 import 'game.dart';
 
 enum CardClass {
@@ -119,33 +120,33 @@ class CardModel {
       allOtherCard.addAll(otherFines);
     }
 
-      await DialogForGame.show(
-          context,
-          cardDescription['ДВА ПО ЦЕНЕ ОДНОГО1']!,
-          roomName,
-          allMyCard,
-          myID,
-          otherID,
-          ScrollForSacrifice(
-              cards: allMyCard,
-              roomName: roomName,
-              myID: myID,
-              countDiscard: 1));
-
-      await DialogForGame.show(
+    await DialogForGame.show(
         context,
-        cardDescription['ДВА ПО ЦЕНЕ ОДНОГО2']!,
+        cardDescription['ДВА ПО ЦЕНЕ ОДНОГО1']!,
         roomName,
-        allOtherCard,
+        allMyCard,
         myID,
         otherID,
-        ScrollForDestroy(
-            cards: allOtherCard,
+        ScrollForSacrifice(
+            cards: allMyCard,
             roomName: roomName,
             myID: myID,
-            otherID: otherID,
-            countDestroy: 2),
-      );
+            countDiscard: 1));
+
+    await DialogForGame.show(
+      context,
+      cardDescription['ДВА ПО ЦЕНЕ ОДНОГО2']!,
+      roomName,
+      allOtherCard,
+      myID,
+      otherID,
+      ScrollForDestroy(
+          cards: allOtherCard,
+          roomName: roomName,
+          myID: myID,
+          otherID: otherID,
+          countDestroy: 2),
+    );
   }
 
 
@@ -183,10 +184,12 @@ class CardModel {
           myID: myID,
           countDiscard: 1,
           onCardTap: (BuildContext context, CardModel? card) async {
-            await Player.destroyUnicorn(card, roomName, otherID);
+            await Player.destroyUnicorn(
+                context, card!, roomName, otherID, myID);
           },
         ),
       );
+      await Game.changeGameStatus('fireWire', roomName);
     } else {
       await DialogForGame.show(
         context,
@@ -201,7 +204,8 @@ class CardModel {
           myID: myID,
           countDiscard: 1,
           onCardTap: (BuildContext context, CardModel? card) async {
-            await Player.destroyUnicorn(card, roomName, otherID);
+            await Player.destroyUnicorn(
+                context, card!, roomName, otherID, myID);
           },
         ),
       );
@@ -254,7 +258,6 @@ class CardModel {
     }
 
     print('сколько otherCard $otherCard');
-
 
 
     await DialogForGameChoose.show(
@@ -446,7 +449,8 @@ class CardModel {
 
   static Future<void> spellReboot(String roomName,
       String myID,
-      String otherID,) async {
+      String otherID,
+      ) async {
     List<CardModel> myBonus = [];
     List<CardModel> otherBonus = [];
     List<CardModel> otherFines = [];
@@ -548,6 +552,8 @@ class CardModel {
 
     List<CardModel>? deck =
     await PlayerState.getPlayerDeck(roomName, 'hand', myID);
+    await Game.decreaseActCount(roomName);
+    await Game.decreaseActCount(roomName);
 
     await DialogForGame.show(
       context,
@@ -563,18 +569,14 @@ class CardModel {
           countDestroy: 3),
     );
 
-    await Game.decreaseActCount(roomName);
-    await Game.decreaseActCount(roomName);
-    print('минус ход ${Provider
-        .of<GameDataProvider>(context, listen: false)
-        .actCount}');
   }
 
 
   static Future<void> spellExchangeUnicorn(BuildContext context,
       String roomName,
       String myID,
-      String otherID,) async {
+      String otherID,
+      ) async {
     print('мы на розыгрыше картs обмен единорожками');
 
     String? description = cardDescription['ОБМЕН ЕДИНОРОЖКАМИ'];
@@ -602,6 +604,10 @@ class CardModel {
               await Player.moveCardFromPDToPD(
                   card!, roomName, 'stall', 'stall', myID, otherID);
             }));
+    //fineWire
+    // await Game.changeGameStatus('fineWire', roomName);
+    await Game.changeGameStatus('playOutUnicornNoCurrent', roomName);
+    await Game.changeGameStatus('fireWire', roomName);
 
     await DialogForGame.show(
         context,
@@ -619,6 +625,12 @@ class CardModel {
               await Player.moveCardFromPDToPD(
                   card!, roomName, 'stall', 'stall', otherID, myID);
             }));
+
+    // fineWire
+    // await Game.changeGameStatus('fireWire', roomName);
+    await Game.changeGameStatus('fineWire', roomName);
+    await Game.changeGameStatus('playOutUnicornExchange', roomName);
+
   }
 
 
@@ -650,6 +662,10 @@ class CardModel {
                 await Player.moveCardFromGDToPD(
                     card!, roomName, 'discardPile', 'stall', myID);
               }));
+      //fineWire
+await Game.changeGameStatus('fireWire', roomName);
+await Game.changeGameStatus('playOutUnicorn', roomName);
+
     } else {
       await DialogWindow.show(
           context, checkText['ПОЦЕЛУЙ ЛЮБВИ']!, titleForDialogWindow);
@@ -707,11 +723,11 @@ class CardModel {
     }
   }
 
+
   static Future<void> spellKick(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async {
+      String otherID,) async {
     print('мы на розыгрыше карт ПИНОК');
     List<CardModel> allMyCard = [];
     List<CardModel>? myStall =
@@ -746,7 +762,8 @@ class CardModel {
                 await Player.takeCardOnHand(card!, roomName, myID);
               }));
 
-      List<CardModel>? deck = await PlayerState.getPlayerDeck(roomName, 'hand', myID);
+      List<CardModel>? deck = await PlayerState.getPlayerDeck(
+          roomName, 'hand', myID);
       await DialogForGame.show(
           context,
           cardDescription['ПИНОК1']!,
@@ -761,7 +778,6 @@ class CardModel {
               onCardTap: (context, CardModel? card) async {
                 await Player.cardDiscard(context, roomName, card!, myID);
               }));
-
     }
   }
 
@@ -769,19 +785,23 @@ class CardModel {
       String roomName,
       CardModel? card,
       String myID,
-      String otherID,) async{
-    await Game.changeGameStatus('inProcess', roomName);
-    if(card?.name == 'МИСТИЧЕСКИЙ ВОДОВОРОТ'){
+      String otherID,) async {
+    // await Game.changeGameStatus('inProcess', roomName);
+
+    if (card?.name == 'МИСТИЧЕСКИЙ ВОДОВОРОТ') {
+      await Game.changeGameStatus('inProcess', roomName);
       print('разыгрываем МИСТИЧЕСКИЙ ВОДОВОРОТ для не текущего игрока');
       await CardModel.spellMysticalWhirlpool(context, roomName, myID, otherID);
-    } else if(card?.name == 'МИСТИЧЕСКИЙ ВОДОВОРОТ'){
+    } else if (card?.name == 'МИСТИЧЕСКИЙ ВОДОВОРОТ') {
+      await Game.changeGameStatus('inProcess', roomName);
       print('разыгрываем МИСТИЧЕСКИЙ ВОДОВОРОТ для не текущего игрока');
       await CardModel.spellMysticalWhirlpool(context, roomName, myID, otherID);
-    }else if(card?.name == 'ПИНОК'){
+    } else if (card?.name == 'ПИНОК') {
+      await Game.changeGameStatus('inProcess', roomName);
       print('разыгрываем ПИНОК1 для не текущего игрока');
       await CardModel.spellKick(context, roomName, myID, otherID);
     }
-  }
+    }
 
 
 // заклинания
@@ -792,545 +812,611 @@ class CardModel {
       String otherID,) async {
     CardModel? card = await Game.getPlayOutCard(roomName);
     print('разыгырваемая карта в плэйспелл ${card?.name}');
-
-CardModel? jump;
-    List<CardModel>? bonuses = await PlayerState.getPlayerDeck(roomName, 'bonuses', myID);
-    List<CardModel>? fines = await PlayerState.getPlayerDeck(roomName, 'fines', myID);
-    List<CardModel>? effects = await PlayerState.getPlayerDeck(roomName, 'effects', myID);
-    bool isEven = fines?.any((card)=> card.name =='ОТСТОЙЛО') ?? false;
-
-    bool isEvenJump = bonuses?.any((card)=> card.name =='ПРЫГ-СКОК') ?? false;
-    print('есть ли карта ПРЫГ-СКОК $isEvenJump ');
-    bool isEvenEffects = effects?.any((card)=> card.name =='ПРЫГ-СКОК') ?? false;
-    print('есть ли карта in effects $isEvenEffects ');
-
-    if(isEvenJump && !isEven){
-      jump = effects?.firstWhere((card)=> card.name =='ПРЫГ-СКОК');
-      print('jump ${jump!.name} ');
-
-    }
-
-    if (card?.name == 'ЕДИНОРОЖИЙ ЯД') {
-        print('мы на розыгрыше заклинания единорожий яд');
-        await spellUnicornPoison(
-          roomName,
-          myID,
-          otherID,
-          card!,
-          context,
-        );
-      }
-      else if (card?.name == 'ДВА ПО ЦЕНЕ ОДНОГО') {
-        print('на условии что это заклинанеи два поцене одного');
-        await spellTwoForThePriceOfOne(context, roomName, myID, otherID);
-      }
-      else if (card?.name == 'ЦЕЛЬСЬ!') {
-        print('мы на условииЮ что это цельсь');
-        await spellTarget(context, roomName, myID, otherID);
-      }
-      else if (card?.name == 'НАГЛЫЙ ГРАБЕЖ') {
-        print('мы на условииЮ что это грабеж');
-
-        await spellSteal(context, roomName, myID, otherID);
-      }
-      else if (card?.name == 'ПРИЦЕЛЬНАЯ АТАКА') {
-        print('мы на условии что это ПРИЦЕЛЬНАЯ АТАКА');
-        await spellAttack(context, roomName, myID, otherID);
-      }
-      else if (card?.name == 'ЧИСТАЯ ВЫГОДА') {
-        print('мы на условии что это ЧИСТАЯ ВЫГОДА');
-        await spellBenefit(context, roomName, myID, otherID);
-      }
-      else if (card?.name == 'ВСТРЯСКА') {
-        print('мы на условии что это ВСТРЯСКА');
-        await spellShake(roomName, myID);
-      }
-      else if (card?.name == 'ПЕРЕЗАГРУЗКА') {
-        print('мы на условии что это ПЕРЕЗАГРУЗКА');
-        await spellReboot(roomName, myID, otherID);
-      }
-      else if (card?.name == 'БЛЕСТЯЩЕЕ ТОРНАДО') {
-        print('мы на условии что это БЛЕСТЯЩЕЕ ТОРНАДО');
-        await spellTornado(BuildContext, context, roomName, myID, otherID);
-      }
-      else if (card?.name == 'КЛЕВЕР-ПЕРЕВЁРТЫШ') {
-        print('мы на условии что это КЛЕВЕР-ПЕРЕВЁРТЫШ');
-        await spellTurningClover(context, roomName, myID, otherID);
-      }
-      else if (card?.name == 'ОБМЕН ЕДИНОРОЖКАМИ') {
-        print('мы на условии что это ОБМЕН ЕДИНОРОЖКАМИ');
-        await spellExchangeUnicorn(context, roomName, myID, otherID);
-      }
-      else if (card?.name == 'ПОЦЕЛУЙ ЛЮБВИ') {
-        print('мы на условии что это ПОЦЕЛУЙ ЛЮБВИ');
-        await spellKissOfLove(context, roomName, myID, otherID);
-      }
-      else if (card?.name == 'НЕЧЕСТНАЯ СДЕЛКА') {
-        print('мы на условии что это ОНЕЧЕСТНАЯ СДЕЛКА');
-        await spellRawDeal(roomName, myID, otherID);
-      } else if (card?.name == 'МИСТИЧЕСКИЙ ВОДОВОРОТ') {
-        print('мы на условии что это МИСТИЧЕСКИЙ ВОДОВОРОТ');
-        await spellMysticalWhirlpool(context, roomName, myID, otherID);
-      }
-
-
     await Game.changeGameStatus('inProcess', roomName);
 
-    if (card?.name != 'ПЕРЕЗАГРУЗКА' && card?.name != 'ВСТРЯСКА' &&
-        card?.name != 'МИСТИЧЕСКИЙ ВОДОВОРОТ') {
-      await GameState.updateWithNewCardGameDeck(
-          roomName, card!, 'discardPile');
-    } else {
-      await Player.shuffleDeckWithNewCard(roomName, card, 'deck');
-      await GameState.updateDeck(roomName, [], 'discardPile');
-    }
     await GameState.removeCardGameDeck(
       roomName,
       card!,
       'playingCardOnTable',
     );
+    await GameState.updateWithNewCardGameDeck(
+        roomName, card!, 'discardPile');
 
-    if( isEven || !isEvenJump || isEvenEffects) {
-      print('нет прыг-скок или он не повторяется');
-      await Game.checkCountCardOnHand(
-        context,
+    if (card?.name == 'ЕДИНОРОЖИЙ ЯД') {
+      print('мы на розыгрыше заклинания единорожий яд');
+      await spellUnicornPoison(
         roomName,
-        'hand',
-        Provider
-            .of<CurrentPlayerState>(context, listen: false)
-            .currentPlayer,
         myID,
         otherID,
+        card!,
+        context,
       );
-    } else{
-      print('есть прыг-скок или  2 хода');
-
-      await Game.decreaseActCount(roomName);
-      await PlayerState.addCardPlayerDeck(roomName, jump!, 'effects', myID);
     }
-    await PlayerState.updatePlayerDeck(roomName, [], 'effects', myID);
+    else if (card?.name == 'ДВА ПО ЦЕНЕ ОДНОГО') {
+      print('на условии что это заклинанеи два поцене одного');
+      await spellTwoForThePriceOfOne(context, roomName, myID, otherID);
+
+    }
+    else if (card?.name == 'ЦЕЛЬСЬ!') {
+      print('мы на условииЮ что это цельсь');
+      await spellTarget(context, roomName, myID, otherID);
+    }
+    else if (card?.name == 'НАГЛЫЙ ГРАБЕЖ') {
+      print('мы на условииЮ что это грабеж');
+
+      await spellSteal(context, roomName, myID, otherID);
+    }
+    else if (card?.name == 'ПРИЦЕЛЬНАЯ АТАКА') {
+      print('мы на условии что это ПРИЦЕЛЬНАЯ АТАКА');
+      await spellAttack(context, roomName, myID, otherID);
+    }
+    else if (card?.name == 'ЧИСТАЯ ВЫГОДА') {
+      print('мы на условии что это ЧИСТАЯ ВЫГОДА');
+      await spellBenefit(context, roomName, myID, otherID);
+    }
+    else if (card?.name == 'ВСТРЯСКА') {
+      print('мы на условии что это ВСТРЯСКА');
+      await spellShake(roomName, myID);
+    }
+    else if (card?.name == 'ПЕРЕЗАГРУЗКА') {
+      print('мы на условии что это ПЕРЕЗАГРУЗКА');
+      await spellReboot(roomName, myID, otherID);
+    }
+    else if (card?.name == 'БЛЕСТЯЩЕЕ ТОРНАДО') {
+      print('мы на условии что это БЛЕСТЯЩЕЕ ТОРНАДО');
+      await spellTornado(BuildContext, context, roomName, myID, otherID);
+    }
+    else if (card?.name == 'КЛЕВЕР-ПЕРЕВЁРТЫШ') {
+      print('мы на условии что это КЛЕВЕР-ПЕРЕВЁРТЫШ');
+      await spellTurningClover(context, roomName, myID, otherID);
+    }
+    else if (card?.name == 'ОБМЕН ЕДИНОРОЖКАМИ') {
+      print('мы на условии что это ОБМЕН ЕДИНОРОЖКАМИ');
+      await spellExchangeUnicorn(context, roomName, myID, otherID);
+    }
+    else if (card?.name == 'ПОЦЕЛУЙ ЛЮБВИ') {
+      print('мы на условии что это ПОЦЕЛУЙ ЛЮБВИ');
+      await spellKissOfLove(context, roomName, myID, otherID);
+      CardModel? card = await Game.getPlayOutCard(roomName);
+      print('разыгырваемая карта в поцелуй любви ${card!.name}');
+      // await Game.changeGameStatus('playOutUnicorn', roomName);
+    }
+    else if (card?.name == 'НЕЧЕСТНАЯ СДЕЛКА') {
+      print('мы на условии что это ОНЕЧЕСТНАЯ СДЕЛКА');
+      await spellRawDeal(roomName, myID, otherID);
+    } else if (card?.name == 'МИСТИЧЕСКИЙ ВОДОВОРОТ') {
+      print('мы на условии что это МИСТИЧЕСКИЙ ВОДОВОРОТ');
+      await spellMysticalWhirlpool(context, roomName, myID, otherID);
+    }
+
+    await Game.checkCountCardOnHand(
+      context,
+      roomName,
+      'hand',
+      myID,
+      otherID,
+    );
     await Game.updatePlayOutCard(roomName, null);
     print('мы закончили розыгрыш заклинаний');
-}
-
-
+  }
 
 
   //единороги
 
-  static Future<void> unicornAlluringNarwhal(
-      BuildContext context,
+  static Future<void> unicornAlluringNarwhal(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
- print('МАНЯЩИЙ НАРВАЛ');
-    List<CardModel>? otherBonus = await PlayerState.getPlayerDeck(roomName, 'bonuses', otherID);
+      String otherID,) async {
+    print('МАНЯЩИЙ НАРВАЛ');
+    List<CardModel>? otherBonus = await PlayerState.getPlayerDeck(
+        roomName, 'bonuses', otherID);
 
-    if(otherBonus!.isNotEmpty){
+    if (otherBonus!.isNotEmpty) {
       await DialogForGame.show(
-          context, cardDescription['МАНЯЩИЙ НАРВАЛ']!, roomName, otherBonus, myID, otherID,
+          context,
+          cardDescription['МАНЯЩИЙ НАРВАЛ']!,
+          roomName,
+          otherBonus,
+          myID,
+          otherID,
           ScrollForGame(
-              cards: otherBonus, roomName: roomName, myID: myID, countDiscard: 1,
-              onCardTap: (context, CardModel? card)async{
-                await Player.moveCardFromPDToPD(card!, roomName, 'bonuses', 'bonuses', otherID, myID);
+              cards: otherBonus,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.moveCardFromPDToPD(
+                    card!, roomName, 'bonuses', 'bonuses', otherID, myID);
               }));
     }
-
   }
 
-  static Future<void> unicornGreatNarwhal(
-      BuildContext context,
+  static Future<void> unicornGreatNarwhal(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
-    List<CardModel> deck =[];
-     List<CardModel> card = await GameState.getDeck(roomName, 'deck');
+      String otherID,) async {
+    List<CardModel> deck = [];
+    List<CardModel> card = await GameState.getDeck(roomName, 'deck');
 
-     List<CardModel> unicorn = card.where((card)=> card.type== CardClass.unicorn).toList();
+    List<CardModel> unicorn = card.where((card) =>
+    card.type == CardClass.unicorn).toList();
 
-     for(int i =0; i<unicorn.length; i++){
-       if(narwhalUnicorns.contains(unicorn[i].name)){
-         deck.add(unicorn[i]);
-       }
+    for (int i = 0; i < unicorn.length; i++) {
+      if (narwhalUnicorns.contains(unicorn[i].name)) {
+        deck.add(unicorn[i]);
+      }
     }
 
-     if(deck.isNotEmpty){
-       await DialogForGame.show(context, cardDescription['ВЕЛИКИЙ НАРВАЛ']!, roomName, deck, myID, otherID,
-           ScrollForGame(cards: deck, roomName: roomName, myID: myID, countDiscard: 1,
-               onCardTap: (context, CardModel? card)async{
-             await Player.moveCardFromGDToPD(card!, roomName, 'deck', 'hand', myID);
-               }));
-     } else{
-       await DialogWindow.show(context,checkText['unicorn']!, titleForDialogWindow);
-     }
-
+    if (deck.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['ВЕЛИКИЙ НАРВАЛ']!,
+          roomName,
+          deck,
+          myID,
+          otherID,
+          ScrollForGame(cards: deck,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.moveCardFromGDToPD(
+                    card!, roomName, 'deck', 'hand', myID);
+              }));
+    } else {
+      await DialogWindow.show(
+          context, checkText['unicorn']!, titleForDialogWindow);
+    }
   }
 
 
-
-  static Future<void> unicornImpressiveNarwhal(
-      BuildContext context,
+  static Future<void> unicornImpressiveNarwhal(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
+      String otherID,) async {
     List<CardModel> cards = await GameState.getDeck(roomName, 'deck');
 
-    List<CardModel> deck = cards.where((card)=> card.type== CardClass.bonus).toList();
+    List<CardModel> deck = cards.where((card) => card.type == CardClass.bonus)
+        .toList();
     print('как много бонусов в итоге${deck.length}');
 
-    if(deck.isNotEmpty){
-      await DialogForGame.show(context, cardDescription['ИМПОЗАНТНЫЙ НАРВАЛ']!, roomName, deck, myID, otherID,
-          ScrollForGame(cards: deck, roomName: roomName, myID: myID, countDiscard: 1,
-              onCardTap: (context, CardModel? card)async{
-                await Player.moveCardFromGDToPD(card!, roomName, 'deck', 'hand', myID);
+    if (deck.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['ИМПОЗАНТНЫЙ НАРВАЛ']!,
+          roomName,
+          deck,
+          myID,
+          otherID,
+          ScrollForGame(cards: deck,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.moveCardFromGDToPD(
+                    card!, roomName, 'deck', 'hand', myID);
               }));
-    } else{
-      await DialogWindow.show(context,checkText['unicorn']!, titleForDialogWindow);
+    } else {
+      await DialogWindow.show(
+          context, checkText['unicorn']!, titleForDialogWindow);
     }
   }
 
-  static Future<void> unicornEmergencyNarwhal(
-      BuildContext context,
+  static Future<void> unicornEmergencyNarwhal(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
+      String otherID,) async {
     List<CardModel> cards = await GameState.getDeck(roomName, 'deck');
 
-    List<CardModel> deck = cards.where((card)=> card.type== CardClass.fine).toList();
+    List<CardModel> deck = cards.where((card) => card.type == CardClass.fine)
+        .toList();
     print('как много fines в итоге${deck.length}');
 
-    if(deck.isNotEmpty){
-      await DialogForGame.show(context, cardDescription['АВРАЛЬНЫЙ НАРВАЛ']!, roomName, deck, myID, otherID,
-          ScrollForGame(cards: deck, roomName: roomName, myID: myID, countDiscard: 1,
-              onCardTap: (context, CardModel? card)async{
-                await Player.moveCardFromGDToPD(card!, roomName, 'deck', 'hand', myID);
+    if (deck.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['АВРАЛЬНЫЙ НАРВАЛ']!,
+          roomName,
+          deck,
+          myID,
+          otherID,
+          ScrollForGame(cards: deck,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.moveCardFromGDToPD(
+                    card!, roomName, 'deck', 'hand', myID);
               }));
-    } else{
-      await DialogWindow.show(context,checkText['unicorn']!, titleForDialogWindow);
+    } else {
+      await DialogWindow.show(
+          context, checkText['unicorn']!, titleForDialogWindow);
     }
   }
 
-  static Future<void> unicornTorpedoNarwhal(
-      BuildContext context,
+  static Future<void> unicornTorpedoNarwhal(BuildContext context,
       String roomName,
-      String myID,
-      ) async{
-
+      String myID,) async {
     await PlayerState.updatePlayerDeck(roomName, [], 'fines', myID);
   }
 
-  static Future<void> unicornMagicWing(
-      BuildContext context,
+  static Future<void> unicornMagicWing(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
+      String otherID,) async {
     List<CardModel> cards = await GameState.getDeck(roomName, 'discardPile');
 
-    List<CardModel> deck = cards.where((card)=> card.type== CardClass.spell).toList();
+    List<CardModel> deck = cards.where((card) => card.type == CardClass.spell)
+        .toList();
     print('как много spell в итоге${deck.length}');
 
-    if(deck.isNotEmpty){
-      await DialogForGame.show(context, cardDescription['ВОЛШЕБНЫЙ КРЫЛОРОГ']!, roomName, deck, myID, otherID,
-          ScrollForGame(cards: deck, roomName: roomName, myID: myID, countDiscard: 1,
-              onCardTap: (context, CardModel? card)async{
-                await Player.moveCardFromGDToPD(card!, roomName, 'discardPile', 'hand', myID);
+    if (deck.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['ВОЛШЕБНЫЙ КРЫЛОРОГ']!,
+          roomName,
+          deck,
+          myID,
+          otherID,
+          ScrollForGame(cards: deck,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.moveCardFromGDToPD(
+                    card!, roomName, 'discardPile', 'hand', myID);
               }));
-    } else{
-      await DialogWindow.show(context,checkText['unicorn']!, titleForDialogWindow);
+    } else {
+      await DialogWindow.show(
+          context, checkText['unicorn']!, titleForDialogWindow);
     }
-
   }
-  
-  
-  static Future<void> unicornJetWing(
-      BuildContext context,
+
+
+  static Future<void> unicornJetWing(BuildContext context,
       String roomName,
-      String myID,
-      ) async{
+      String myID,) async {
     List<CardModel> cards = await GameState.getDeck(roomName, 'discardPile');
 
-    List<CardModel> deck = cards.where((card)=> card.type== CardClass.tpru).toList();
+    List<CardModel> deck = cards.where((card) => card.type == CardClass.tpru)
+        .toList();
     print('как много spell в итоге${deck.length}');
 
 
-    if(deck.isNotEmpty){
-      for(int i =0; i<deck.length; i++){
-        if(deck[i].id == '15tpru'){
+    if (deck.isNotEmpty) {
+      for (int i = 0; i < deck.length; i++) {
+        if (deck[i].id == '15tpru') {
           deck.remove(deck[i]);
         }
       }
       CardModel card = deck.first;
-      await Player.moveCardFromGDToPD(card, roomName, 'discardPile', 'hand', myID);
-
-    } else{
-      await DialogWindow.show(context,checkText['unicorn']!, titleForDialogWindow);
+      await Player.moveCardFromGDToPD(
+          card, roomName, 'discardPile', 'hand', myID);
+    } else {
+      await DialogWindow.show(
+          context, checkText['unicorn']!, titleForDialogWindow);
     }
-
   }
 
-  static Future<void> unicornInfuriatingWing(
-      BuildContext context,
+  static Future<void> unicornInfuriatingWing(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
+      String otherID,) async {
+    List<CardModel>? cards = await PlayerState.getPlayerDeck(
+        roomName, 'hand', myID);
 
-    List<CardModel>? cards = await PlayerState.getPlayerDeck(roomName, 'hand', myID);
-
-    if(cards!.isNotEmpty){
-      await DialogForGame.show(context, cardDescription['БЕСЯЧИЙ КРЫЛОРОГ']!, roomName, cards, myID, otherID,
-          ScrollForGame(cards: cards, roomName: roomName, myID: myID, countDiscard: 1,
-              onCardTap: (context, CardModel? card)async{
-            await Player.cardDiscard(context, roomName, card!, myID);
+    if (cards!.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['БЕСЯЧИЙ КРЫЛОРОГ']!,
+          roomName,
+          cards,
+          myID,
+          otherID,
+          ScrollForGame(cards: cards,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.cardDiscard(context, roomName, card!, myID);
               }));
-
-    } else{
-      await DialogWindow.show(context,checkText['unicorn']!, titleForDialogWindow);
+    } else {
+      await DialogWindow.show(
+          context, checkText['unicorn']!, titleForDialogWindow);
     }
-
   }
 
-  static Future<void> unicornMermaidHorn(
-      BuildContext context,
-  String roomName,
-  String myID,
-  String otherID,
-  ) async {
-  print('мы на розыгрыше карт РУСАЛКОРОГ');
-  List<CardModel> allMyCard = [];
-  List<CardModel>? myStall =
-  await PlayerState.getPlayerDeck(roomName, 'stall', myID);
-  if (myStall!.isNotEmpty) {
-  allMyCard.addAll(myStall);
-  }
-  List<CardModel>? myBonus =
-  await PlayerState.getPlayerDeck(roomName, 'bonuses', myID);
-  if (myBonus!.isNotEmpty) {
-  allMyCard.addAll(myBonus);
-  }
-  List<CardModel>? myFines =
-  await PlayerState.getPlayerDeck(roomName, 'fines', myID);
-  if (myFines!.isNotEmpty) {
-  allMyCard.addAll(myFines);
-  }
-
-  if (allMyCard!.isNotEmpty) {
-  await DialogForGame.show(
-  context,
-  cardDescription['РУСАЛКОРОГ']!,
-  roomName,
-  allMyCard,
-  myID,
-  otherID,
-  ScrollForGame(cards: allMyCard,
-  roomName: roomName,
-  myID: myID,
-  countDiscard: 1,
-  onCardTap: (context, CardModel? card) async {
-  await Player.takeCardOnHand(card!, roomName, myID);
-  }));
-
-  }
-  }
-
-  static Future<void> unicornLamaHorn(
-      BuildContext context,
+  static Future<void> unicornMermaidHorn(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
+      String otherID,) async {
+    print('мы на розыгрыше карт РУСАЛКОРОГ');
+    List<CardModel> allMyCard = [];
+    List<CardModel>? myStall =
+    await PlayerState.getPlayerDeck(roomName, 'stall', myID);
+    if (myStall!.isNotEmpty) {
+      allMyCard.addAll(myStall);
+    }
+    List<CardModel>? myBonus =
+    await PlayerState.getPlayerDeck(roomName, 'bonuses', myID);
+    if (myBonus!.isNotEmpty) {
+      allMyCard.addAll(myBonus);
+    }
+    List<CardModel>? myFines =
+    await PlayerState.getPlayerDeck(roomName, 'fines', myID);
+    if (myFines!.isNotEmpty) {
+      allMyCard.addAll(myFines);
+    }
 
-    List<CardModel>? cards = await PlayerState.getPlayerDeck(roomName, 'hand', myID);
+    if (allMyCard!.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['РУСАЛКОРОГ']!,
+          roomName,
+          allMyCard,
+          myID,
+          otherID,
+          ScrollForGame(cards: allMyCard,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.takeCardOnHand(card!, roomName, myID);
+              }));
+    }
+  }
 
-    if(cards!.isNotEmpty){
-      await DialogForGame.show(context, cardDescription['ЛАМАРОГ']!, roomName, cards, myID, otherID,
-          ScrollForGame(cards: cards, roomName: roomName, myID: myID, countDiscard: 1,
-              onCardTap: (context, CardModel? card)async{
+  static Future<void> unicornLamaHorn(BuildContext context,
+      String roomName,
+      String myID,
+      String otherID,) async {
+    List<CardModel>? cards = await PlayerState.getPlayerDeck(
+        roomName, 'hand', myID);
+
+    if (cards!.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['ЛАМАРОГ']!,
+          roomName,
+          cards,
+          myID,
+          otherID,
+          ScrollForGame(cards: cards,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
                 await Player.cardDiscard(context, roomName, card!, myID);
               }));
     }
-
   }
 
-  static Future<void> unicornPretentiousWing(
-      BuildContext context,
+  static Future<void> unicornPretentiousWing(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
-    
+      String otherID,) async {
     List<CardModel> cards = await GameState.getDeck(roomName, 'discardPile');
-    
-    List<CardModel> deck = cards.where((card)=> card.type == CardClass.unicorn).toList();
-    
-    if(deck.isNotEmpty){
-      await DialogForGame.show(context, cardDescription['ПАФОСНЫЙ КРЫЛОРОГ']!, roomName, deck, myID, otherID, 
-          ScrollForGame(cards: deck, roomName: roomName, myID: myID, countDiscard: 1, 
-              onCardTap: (contex, CardModel? card)async{
-            await Player.moveCardFromGDToPD(card!, roomName, 'discardPile', 'hand', myID);
-              }));
-    }else{
-      await DialogWindow.show(context,checkText['unicorn']!, titleForDialogWindow);
-    }
-  }
 
-  static Future<void> unicornGreedyWing(
-      String roomName,
-      String myID,
-      ) async{
-    List<CardModel>? deck = await GameState.getDeck(roomName, 'deck');
-    
-    await Player.moveCardFromGDToPD(deck[deck.length-1], roomName, 'deck', 'hand', myID);
-    
-  }
+    List<CardModel> deck = cards.where((card) => card.type == CardClass.unicorn)
+        .toList();
 
-
-   static Future<void> unicornCobHorn(
-      BuildContext context,
-      String roomName,
-      String myID,
-      String otherID,
-      ) async{
-     List<CardModel> takeCard = await GameState.getDeck(roomName, 'deck');
-     String? description = cardDescription['ПОЧАТОК РОГ'];
-
-
-     for (int i = 0; i < 2; i++) {
-       CardModel card = takeCard[takeCard.length -1 - i];
-       await Player.moveCardFromGDToPD(card, roomName, 'deck', 'hand', myID);
-     }
-
-     List<CardModel>? deck =
-     await PlayerState.getPlayerDeck(roomName, 'hand', myID);
-
-     await DialogForGame.show(
-         context,
-         description!,
-         roomName,
-         deck,
-         myID,
-         otherID,
-         ScrollForGame(
-             cards: deck,
-             roomName: roomName,
-             myID: myID,
-             countDiscard: 1,
-             onCardTap: (BuildContext context, CardModel? card) async {
-               await Player.cardDiscard(context, roomName, card!, myID);
-             }));
-   }
-
-  static Future<void> unicornChainsawHorn(
-      BuildContext context,
-      String roomName,
-      String otherID,
-      ) async{
-  }
-
-  static Future<void> unicornKnifeHorn(
-      BuildContext context,
-      String roomName,
-      String myID,
-      String otherID,
-      ) async {
-    List<CardModel>? deck = await PlayerState.getPlayerDeck(
-        roomName, 'stall', otherID);
-
-    if (deck!.isNotEmpty) {
-      await DialogForGame.show(context, cardDescription['НОЖЕРОГ']!, roomName, deck, myID, otherID,
-          ScrollForGame(cards: deck, roomName: roomName, myID: myID, countDiscard: 1,
-              onCardTap: (context, CardModel? card)async{
-            await Player.destroyUnicorn(card, roomName, otherID);
+    if (deck.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['ПАФОСНЫЙ КРЫЛОРОГ']!,
+          roomName,
+          deck,
+          myID,
+          otherID,
+          ScrollForGame(cards: deck,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (contex, CardModel? card) async {
+                await Player.moveCardFromGDToPD(
+                    card!, roomName, 'discardPile', 'hand', myID);
               }));
     } else {
-      await DialogWindow.show(context,checkText['unicorn']!, titleForDialogWindow);
+      await DialogWindow.show(
+          context, checkText['unicorn']!, titleForDialogWindow);
     }
   }
 
-  static Future<void> unicornDarkAngelHorn(
-      BuildContext context,
-      String roomName,
-      String myID,
-      String otherID,
-      ) async{
+  static Future<void> unicornGreedyWing(String roomName,
+      String myID,) async {
+    List<CardModel>? deck = await GameState.getDeck(roomName, 'deck');
 
-    List<CardModel>? deckForSacrifice = await PlayerState.getPlayerDeck(roomName, 'stall', myID);
-    CardModel? card = deckForSacrifice!.firstWhere((card)=> card.name =='ТЕМНЫЙ АНГЕЛОРОГ');
-    deckForSacrifice.remove(card);
-
-    await DialogForGame.show(context, cardDescription['ТЕМНЫЙ АНГЕЛОРОГ']!, roomName, deckForSacrifice, myID, otherID,
-         ScrollForGame(cards: deckForSacrifice, roomName: roomName, myID: myID, countDiscard: 1,
-             onCardTap: (context, CardModel? card)async{
-           await Player.sacrificeUnicorn(roomName, card!, myID);
-             }));
-
-    List<CardModel>? deckForAdd = await GameState.getDeck(roomName, 'discardPile');
-    List<CardModel>? deck = deckForAdd.where((card)=>card.type == CardClass.unicorn).toList();
-
-     if(deck.isNotEmpty) {
-       await DialogForGame.show(
-           context,
-           cardDescription['ТЕМНЫЙ АНГЕЛОРОГ1']!,
-           roomName,
-           deck,
-           myID,
-           otherID,
-           ScrollForGame(cards: deck,
-               roomName: roomName,
-               myID: myID,
-               countDiscard: 1,
-               onCardTap: (context, CardModel? card) async {
-                 await Player.moveCardFromGDToPD(
-                     card!, roomName, 'discardPile', 'stall', myID);
-               }));
-     } else {
-       await DialogWindow.show(context, checkText['unicorn']!, titleForDialogWindow);
-     }
-
-
+    await Player.moveCardFromGDToPD(
+        deck[deck.length - 1], roomName, 'deck', 'hand', myID);
   }
 
-  static Future<void> unicornOracle(
-      BuildContext context,
+
+  static Future<void> unicornCobHorn(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
+      String otherID,) async {
+    List<CardModel> takeCard = await GameState.getDeck(roomName, 'deck');
+    String? description = cardDescription['ПОЧАТОК РОГ'];
+
+
+    for (int i = 0; i < 2; i++) {
+      CardModel card = takeCard[takeCard.length - 1 - i];
+      await Player.moveCardFromGDToPD(card, roomName, 'deck', 'hand', myID);
+    }
+
+    List<CardModel>? deck =
+    await PlayerState.getPlayerDeck(roomName, 'hand', myID);
+
+    await DialogForGame.show(
+        context,
+        description!,
+        roomName,
+        deck,
+        myID,
+        otherID,
+        ScrollForGame(
+            cards: deck,
+            roomName: roomName,
+            myID: myID,
+            countDiscard: 1,
+            onCardTap: (BuildContext context, CardModel? card) async {
+              await Player.cardDiscard(context, roomName, card!, myID);
+            }));
+  }
+
+  static Future<void> unicornChainsawHorn(BuildContext context,
+      String roomName,
+      String otherID,) async {
+  }
+
+  static Future<void> unicornKnifeHorn(BuildContext context,
+      String roomName,
+      String myID,
+      String otherID,) async {
+    List<CardModel>? cards = await PlayerState.getPlayerDeck(
+        roomName, 'stall', otherID,
+    );
+
+    List<CardModel>? cardsOtherPlayer = await PlayerState.getPlayerDeck(
+        roomName, 'fines', otherID);
+    bool isEven = cardsOtherPlayer?.any((card) => card.name == 'ПАНДЕЦ') ??
+        false;
+    print('have panda in knifeHorn $isEven');
+
+    if (cards!.isNotEmpty && !isEven) {
+      await DialogForFunction.show(
+          context, cardDescription['НОЖЕРОГ']!, roomName,
+              () async {
+        await DialogForGame.show(
+          context,
+          cardDescription['НОЖЕРОГ']!,
+          roomName,
+          cards,
+          myID,
+          otherID,
+          ScrollForGame(cards: cards,
+            roomName: roomName,
+            myID: myID,
+            countDiscard: 1,
+            onCardTap:
+                (context, CardModel? card) async {
+              await Player.destroyUnicorn(
+                context, card!, roomName, otherID, myID,
+              );
+            },
+          ),
+        );
+              },
+            () {}
+      );
+      }
+
+
+    }
+
+  static Future<void> unicornDarkAngelHorn(BuildContext context,
+      String roomName,
+      String myID,
+      String otherID,) async {
+    List<CardModel>? deckForSacrifice = await PlayerState.getPlayerDeck(
+        roomName, 'stall', myID);
+    CardModel? card = deckForSacrifice!.firstWhere((card) =>
+    card.name == 'ТЕМНЫЙ АНГЕЛОРОГ');
+    deckForSacrifice.remove(card);
+
+    await DialogForGame.show(
+        context,
+        cardDescription['ТЕМНЫЙ АНГЕЛОРОГ']!,
+        roomName,
+        deckForSacrifice,
+        myID,
+        otherID,
+        ScrollForGame(cards: deckForSacrifice,
+            roomName: roomName,
+            myID: myID,
+            countDiscard: 1,
+            onCardTap: (context, CardModel? card) async {
+              await Player.sacrificeUnicorn(context, roomName, card!, myID);
+            }));
+
+    List<CardModel>? deckForAdd = await GameState.getDeck(
+        roomName, 'discardPile');
+    List<CardModel>? deck = deckForAdd.where((card) =>
+    card.type == CardClass.unicorn).toList();
+
+    if (deck.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['ТЕМНЫЙ АНГЕЛОРОГ1']!,
+          roomName,
+          deck,
+          myID,
+          otherID,
+          ScrollForGame(cards: deck,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.moveCardFromGDToPD(
+                    card!, roomName, 'discardPile', 'stall', myID);
+              }));
+print('поменяли статус на fire wire');
+      await Game.changeGameStatus('fireWire', roomName);
+      print('поменяли статус на playOutUnicorn');
+      await Game.changeGameStatus('playOutUnicorn', roomName);
+    } else {
+      await DialogWindow.show(
+          context, checkText['unicorn']!, titleForDialogWindow);
+    }
+  }
+
+  static Future<void> unicornOracle(BuildContext context,
+      String roomName,
+      String myID,
+      String otherID,) async {
     List<CardModel>? cards = await GameState.getDeck(roomName, 'deck');
 
     List<CardModel>? deck = [];
 
-    for(int i =0; i<3; i++){
-      deck.add(cards[cards.length-1-i]);
+    for (int i = 0; i < 3; i++) {
+      deck.add(cards[cards.length - 1 - i]);
     }
 
-    await DialogForGame.show(context, cardDescription['ОРАКУЛОРОГ']!, roomName, cards, myID, otherID,
-        ScrollForGame(cards: deck, roomName: roomName, myID: myID, countDiscard: 1,
-            onCardTap: (context, CardModel? card) async{
-          await Player.moveCardFromGDToPD(card!, roomName, 'deck', 'hand', myID);
+    await DialogForGame.show(
+        context,
+        cardDescription['ОРАКУЛОРОГ']!,
+        roomName,
+        cards,
+        myID,
+        otherID,
+        ScrollForGame(cards: deck,
+            roomName: roomName,
+            myID: myID,
+            countDiscard: 1,
+            onCardTap: (context, CardModel? card) async {
+              await Player.moveCardFromGDToPD(
+                  card!, roomName, 'deck', 'hand', myID);
             }));
   }
 
-  static Future<void> unicornAmerican(
-      BuildContext context,
+  static Future<void> unicornAmerican(BuildContext context,
       String roomName,
       String myID,
       String otherID,
       ) async {
+String? currentPlayer = Provider.of<CurrentPlayerState>(context, listen:false).currentPlayer;
+String otherId = currentPlayer == myID? otherID: myID;
+
+
     List<CardModel>? cards = await PlayerState.getPlayerDeck(
-        roomName, 'stall', otherID);
+        roomName, 'stall', otherId);
 
     int countCard = cards!.length;
     if (cards.isNotEmpty) {
       List<CardModel>? deck = [];
       for (int i = 0; i < countCard; i++) {
         deck.add(
-            CardModel('$i', '$i', CardClass.baby, 'assets/suit.png', '$i'));
+            CardModel('$i', 'card', CardClass.baby, 'assets/suit.png', '$i'));
       }
 
       await DialogForGame.show(
@@ -1351,88 +1437,198 @@ CardModel? jump;
   }
 
 
-  static Future<void> unicornSharkHorn(
-      BuildContext context,
+  static Future<void> unicornSharkHorn(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
+      String otherID,) async {
+    List<CardModel>? cards = await PlayerState.getPlayerDeck(
+        roomName, 'stall', otherID);
 
-    List<CardModel>? cards = await PlayerState.getPlayerDeck(roomName, 'stall', otherID);
-
-if(cards!.isNotEmpty){
-  print('разыгрываем акулорога');
-  await DialogForNo.show(context, cardDescription['АКУЛОРОГ']!, myID, otherID, roomName, 'Play or no?',
-      ScrollForMovingCard(cards: cards, roomName: roomName, myID: myID, countDiscard: 1,
-        onCardTap: (context, CardModel? card)async{
-          await Player.destroyUnicorn(card, roomName, otherID);}),
-      ()async{
-        List<CardModel>? cards = await PlayerState.getPlayerDeck(roomName, 'stall', myID);
-CardModel? shark = cards?.firstWhere((card)=> card.name == 'АКУЛОРОГ');
-await Player.sacrificeUnicorn(roomName, shark, myID);
-      });
-}
-
+    if (cards!.isNotEmpty) {
+      print('разыгрываем акулорога');
+      await DialogForNo.show(
+          context,
+          cardDescription['АКУЛОРОГ']!,
+          myID,
+          otherID,
+          roomName,
+          ScrollForGame(cards: cards,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.destroyUnicorn(
+                    context, card!, roomName, otherID, myID);
+              }),
+              () async {
+            List<CardModel>? stall = await PlayerState.getPlayerDeck(
+                roomName, 'stall', myID);
+            CardModel? shark = stall?.firstWhere((card) =>
+            card.name == 'АКУЛОРОГ') ?? null;
+            print('чему равен шарк ${shark?.name}');
+            if (shark != null) {
+              print('не равен нулю');
+await Player.sacrificeUnicorn(context, roomName, shark, myID);
+            }
+          });
     }
-    
-    
-    static Future<void> unicornBillHorn(
-      BuildContext context,
+  }
+
+
+  static Future<void> unicornBillHorn(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async {
-      if (Provider
-          .of<GameDataProvider>(context, listen: false)
-          .actCount == 0) {
-        List<CardModel>? cards = await PlayerState.getPlayerDeck(
-            roomName, 'stall', otherID);
+      String otherID,) async {
+    if (Provider
+        .of<GameDataProvider>(context, listen: false)
+        .actCount == 0) {
+      List<CardModel>? cards = await PlayerState.getPlayerDeck(
+          roomName, 'stall', otherID);
 
-        if (cards!.isNotEmpty) {
-          await DialogForGame.show(
-              context,
-              cardDescription['НОСОРОГОРОГ']!,
-              roomName,
-              cards,
-              myID,
-              otherID,
-              ScrollForGame(cards: cards,
-                  roomName: roomName,
-                  myID: myID,
-                  countDiscard: 1,
-                  onCardTap: (context, CardModel? card) async {
-                    await Player.destroyUnicorn(card!, roomName, otherID);
-                  }));
-        }
-
-        await Game.incrementActCount(roomName);
-        await Game.incrementActCount(roomName);
+      if (cards!.isNotEmpty) {
+        await DialogForGame.show(
+            context,
+            cardDescription['НОСОРОГОРОГ']!,
+            roomName,
+            cards,
+            myID,
+            otherID,
+            ScrollForGame(cards: cards,
+                roomName: roomName,
+                myID: myID,
+                countDiscard: 1,
+                onCardTap: (context, CardModel? card) async {
+                  await Player.destroyUnicorn(
+                      context, card!, roomName, otherID, myID);
+                }));
       }
-    }
 
-    static Future<void> unicornDestructionHorn(
-      BuildContext context,
+      await Game.incrementActCount(roomName);
+      await Game.incrementActCount(roomName);
+      print('сколько каунт в носорогороге ${Provider.of<GameDataProvider>(context, listen:false).actCount}');
+    }
+  }
+
+  static Future<void> unicornDestructionHorn(BuildContext context,
       String roomName,
       String myID,
-      String otherID,
-      ) async{
+      String otherID,) async {
+    List<CardModel>? cards = await PlayerState.getPlayerDeck(
+        roomName, 'stall', myID);
 
-    List<CardModel>? cards = await PlayerState.getPlayerDeck(roomName, 'stall', myID);
-
-if(cards!.isNotEmpty){
-  await DialogForGame.show(context, cardDescription['КРУШЕРОГ']!, roomName, cards, myID, otherID,
-      ScrollForGame(cards: cards, roomName: roomName, myID: myID, countDiscard: 1,
-          onCardTap: (context, CardModel? card)async{
-        await Player.sacrificeUnicorn(roomName, card!, myID);
-          }));
-
-}
+    if (cards!.isNotEmpty) {
+      await DialogForGame.show(
+          context,
+          cardDescription['КРУШЕРОГ']!,
+          roomName,
+          cards,
+          myID,
+          otherID,
+          ScrollForGame(cards: cards,
+              roomName: roomName,
+              myID: myID,
+              countDiscard: 1,
+              onCardTap: (context, CardModel? card) async {
+                await Player.sacrificeUnicorn(context, roomName, card!, myID);
+              }));
     }
-    
+  }
 
 
-  static Future<void> playOutUnicorn(
-      BuildContext context,
+  static Future<void> unicornArmoredHorn(BuildContext context,
+      String roomName,
+      String myID,
+      ) async {
+    List<CardModel>? cards = await PlayerState.getPlayerDeck(
+        roomName, 'stall', myID);
+
+
+    if (cards!.isNotEmpty) {
+      print('мы разыгырваем условие с бронерогом');
+      CardModel? destroyCard = await Game.getCardRemember(roomName);
+      print('получили ли мы карту, которую хотели убить до условия с бронерогом ${destroyCard!.name}');
+      await DialogForFunction.show(
+          context, cardDescription['ЧЕРНЫЙ БРОНЕРОГ']!, roomName,
+              () async {
+            CardModel? armoredHorn = cards!.firstWhere((card) =>
+            card.name == 'ЧЕРНЫЙ БРОНЕРОГ');
+            await PlayerState.removeCardFromPlayerDeck(
+                roomName, armoredHorn, 'stall', myID);
+            await GameState.updateWithNewCardGameDeck(
+                roomName,
+                armoredHorn,
+                'discardPile');
+await Game.updateCardRemember(roomName, null);
+},
+              () async {
+                await PlayerState.removeCardFromPlayerDeck(
+                    roomName, destroyCard, 'stall', myID);
+            await GameState.updateWithNewCardGameDeck(
+                roomName,
+                destroyCard,
+                'discardPile');
+            await Game.updateCardRemember(roomName, null);
+          }
+      );
+    }
+  }
+
+  static Future<void> unicornPhoenixHorn(BuildContext context,
+      String roomName,
+      String myID,
+      String otherID,) async {
+    List<CardModel>? cards = await PlayerState.getPlayerDeck(roomName, 'hand', myID);
+    List<CardModel>? stall = await PlayerState.getPlayerDeck(roomName, 'stall', myID);
+
+    CardModel? destroyCard = stall!.firstWhere((card)=> card.name == 'ФЕНИКСОРОГ');
+print(' нашли ли мы фениксорога ${destroyCard.name}');
+    if (cards!.isNotEmpty) {
+      await DialogForFunction.show(
+          context, cardDescription['ФЕНИКСОРОГ']!, roomName,
+              () async {
+            // if (cards!.isNotEmpty) {
+              await DialogForGame.show(
+                  context,
+                  cardDescription['ФЕНИКСОРОГ']!,
+                  roomName,
+                  cards,
+                  myID,
+                  otherID,
+                  ScrollForGame(cards: cards,
+                      roomName: roomName,
+                      myID: myID,
+                      countDiscard: 1,
+                      onCardTap:
+                          (context, CardModel? card) async {
+                        await Player.cardDiscard(
+                            context, roomName, card!, myID);
+                      }));
+            // }
+          },
+              () async {
+            await GameState.updateWithNewCardGameDeck(
+                roomName,
+                destroyCard!,
+                'discardPile');
+            await PlayerState.removeCardFromPlayerDeck(
+                roomName, destroyCard!, 'stall', myID);
+          }
+      );
+    } else {
+      await GameState.updateWithNewCardGameDeck(
+          roomName,
+          destroyCard!,
+          'discardPile');
+      await PlayerState.removeCardFromPlayerDeck(
+          roomName, destroyCard!, 'stall', myID);
+    }
+  }
+
+
+
+
+
+  static Future<void> playOutUnicorn(BuildContext context,
       String roomName,
       CardModel? card,
       String myID,
@@ -1440,127 +1636,187 @@ if(cards!.isNotEmpty){
       ) async {
     print('разыгырваемая карта в плэйUnicorn ${card?.name}');
 
-    CardModel? jump;
-    String currentPlayer = Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer;
-    List<CardModel>? fines = await PlayerState.getPlayerDeck(roomName, 'fines', myID);
-    List<CardModel>? bonuses = await PlayerState.getPlayerDeck(roomName, 'bonuses', myID);
-    List<CardModel>? effects = await PlayerState.getPlayerDeck(roomName, 'effects', myID);
-    bool isEven = fines?.any((card)=> card.name =='СЛЕПЯЩИЙ СВЕТ') ?? false;
-    bool isEven2 = fines?.any((card)=> card.name =='ПАНДЕЦ') ?? false;
+    await Game.changeGameStatus('inProcess', roomName);
+    await PlayerState.addCardPlayerDeck(roomName, card!, 'stall', myID);
 
-    bool isEvenJump = bonuses?.any((card)=> card.name =='ПРЫГ-СКОК') ?? false;
-    print('есть ли карта ПРЫГ-СКОК $isEvenJump ');
-    bool isEvenEffects = effects?.any((card)=> card.name =='ПРЫГ-СКОК') ?? false;
-    print('есть ли карта in effects $isEvenEffects ');
+    //finewire
+    await Game.changeGameStatus('fireWire', roomName);
 
-    if(isEvenEffects){
-      jump = effects?.firstWhere((card)=> card.name =='ПРЫГ-СКОК');
-      print('jump ${jump!.name} ');
+    bool isEven = await CheckPossibility.checkHaveSun(roomName, myID);
+    bool isEven2 = await CheckPossibility.checkHavePandec(roomName, myID);
 
+    if (isEven2) {
+      if (isEven) {
+        await PlayerState.addCardPlayerDeck(roomName, card!, 'stall', myID);
+        if (card!.name == 'МАНЯЩИЙ НАРВАЛ') {
+          print('мы на условии что это МАНЯЩИЙ НАРВАЛ');
+          await unicornAlluringNarwhal(context, roomName, myID, otherID);
+        } else if (card.name == 'ВЕЛИКИЙ НАРВАЛ') {
+          print('мы на условии что это ВЕЛИКИЙ НАРВАЛ');
+          await unicornGreatNarwhal(context, roomName, myID, otherID);
+        } else if (card.name == 'ИМПОЗАНТНЫЙ НАРВАЛ') {
+          print('мы на условии что это ИМПОЗАНТНЫЙ НАРВАЛ');
+          await unicornImpressiveNarwhal(context, roomName, myID, otherID);
+        } else if (card.name == 'АВРАЛЬНЫЙ НАРВАЛ') {
+          print('мы на условии что это АВРАЛЬНЫЙ НАРВАЛ');
+          await unicornEmergencyNarwhal(context, roomName, myID, otherID);
+        } else if (card.name == 'ВОЛШЕБНЫЙ КРЫЛОРОГ') {
+          print('мы на условии что это ВОЛШЕБНЫЙ КРЫЛОРОГ');
+          await unicornMagicWing(context, roomName, myID, otherID);
+        } else if (card.name == 'РЕАКТИВНЫЙ КРЫЛОРОГ') {
+          print('мы на условии что это РЕАКТИВНЫЙ КРЫЛОРОГ');
+          await unicornJetWing(context, roomName, myID);
+        } else if (card.name == 'ПАФОСНЫЙ КРЫЛОРОГ') {
+          print('мы на условии что это ПАФОСНЫЙ КРЫЛОРОГ');
+          await unicornPretentiousWing(context, roomName, myID, otherID);
+        } else if (card.name == 'ПОЧАТОК РОГ') {
+          print('мы на условии что это ПОЧАТОК РОГ');
+          await unicornCobHorn(context, roomName, myID, otherID);
+        } else if (card.name == 'ТЕМНЫЙ АНГЕЛОРОГ') {
+          print('мы на условии что это ТЕМНЫЙ АНГЕЛОРОГ');
+          await unicornDarkAngelHorn(context, roomName, myID, otherID);
+        } else if (card.name == 'ОРАКУЛОРОГ') {
+          print('мы на условии что это ОРАКУЛОРОГ');
+          await unicornOracle(context, roomName, myID, otherID);
+        } else if (card.name == 'АМЕРИРОГ') {
+          print('мы на условии что это АМЕРИРОГ');
+          await unicornAmerican(context, roomName, myID, otherID);
+        } else if (card.name == 'ЖАДНЫЙ КРЫЛОРОГ') {
+          print('мы на условии что это ЖАДНЫЙ КРЫЛОРОГ');
+          await unicornGreedyWing(roomName, myID);
+        } else if (card.name == 'ЛАМАРОГ') {
+          print('мы на условии что это ЛАМАРОГ');
+          await unicornLamaHorn(context, roomName, myID, otherID);
+        } else if (card.name == 'НОСОРОГОРОГ') {
+          print('мы на условии что это НОСОРОГОРОГ');
+          await unicornBillHorn(context, roomName, myID, otherID);
+        } else if (card.name == 'КРУШЕРОГ') {
+          print('мы на условии что это КРУШЕРОГ');
+          await unicornDestructionHorn(context, roomName, myID, otherID);
+        } else if (card.name == 'АКУЛОРОГ') {
+          print('мы на условии что это АКУЛОРОГ');
+          await unicornSharkHorn(context, roomName, myID, otherID);
+        }
+            }
+          }
+
+          if (card!.name == 'ТОРПЕДНЫЙ НАРВАЛ') {
+        print('мы на условии что это ТОРПЕДНЫЙ НАРВАЛ');
+        await unicornTorpedoNarwhal(context, roomName, myID);
+      } else if (card.name == 'БЕНЗОПИЛОРОГ') {
+        print('мы на условии что это БЕНЗОПИЛОРОГ');
+        await spellAttack(context, roomName, myID, otherID);
     }
 
-    await PlayerState.addCardPlayerDeck(roomName, card!, 'stall', currentPlayer);
-if(!isEven2 && !isEven) {
-  if (card.name == 'МАНЯЩИЙ НАРВАЛ') {
-    print('мы на условии что это МАНЯЩИЙ НАРВАЛ');
-    await unicornAlluringNarwhal(context, roomName, myID, otherID);
-  } else if (card.name == 'ВЕЛИКИЙ НАРВАЛ') {
-    print('мы на условии что это ВЕЛИКИЙ НАРВАЛ');
-    await unicornGreatNarwhal(context, roomName, myID, otherID);
-  } else if (card.name == 'ИМПОЗАНТНЫЙ НАРВАЛ') {
-    print('мы на условии что это ИМПОЗАНТНЫЙ НАРВАЛ');
-    await unicornImpressiveNarwhal(context, roomName, myID, otherID);
-  } else if (card.name == 'АВРАЛЬНЫЙ НАРВАЛ') {
-    print('мы на условии что это АВРАЛЬНЫЙ НАРВАЛ');
-    await unicornEmergencyNarwhal(context, roomName, myID, otherID);
-  } else if (card.name == 'ВОЛШЕБНЫЙ КРЫЛОРОГ') {
-    print('мы на условии что это ВОЛШЕБНЫЙ КРЫЛОРОГ');
-    await unicornMagicWing(context, roomName, myID, otherID);
-  } else if (card.name == 'РЕАКТИВНЫЙ КРЫЛОРОГ') {
-    print('мы на условии что это РЕАКТИВНЫЙ КРЫЛОРОГ');
-    await unicornJetWing(context, roomName, myID);
-  } else if (card.name == 'ПАФОСНЫЙ КРЫЛОРОГ') {
-    print('мы на условии что это ПАФОСНЫЙ КРЫЛОРОГ');
-    await unicornPretentiousWing(context, roomName, myID, otherID);
-  } else if (card.name == 'ПОЧАТОК РОГ') {
-    print('мы на условии что это ПОЧАТОК РОГ');
-    await unicornCobHorn(context, roomName, myID, otherID);
-  } else if (card.name == 'ТЕМНЫЙ АНГЕЛОРОГ') {
-    print('мы на условии что это ТЕМНЫЙ АНГЕЛОРОГ');
-    await unicornDarkAngelHorn(context, roomName, myID, otherID);
-  } else if (card.name == 'ОРАКУЛОРОГ') {
-    print('мы на условии что это ОРАКУЛОРОГ');
-    await unicornOracle(context, roomName, myID, otherID);
-  } else if (card.name == 'АМЕРИРОГ') {
-    print('мы на условии что это АМЕРИРОГ');
-    await unicornAmerican(context, roomName, myID, otherID);
-  } else if (card.name == 'ЖАДНЫЙ КРЫЛОРОГ') {
-    print('мы на условии что это ЖАДНЫЙ КРЫЛОРОГ');
-    await unicornGreedyWing(roomName, myID);
-  }else if (card.name == 'ЛАМАРОГ') {
-    print('мы на условии что это ЛАМАРОГ');
-    await unicornLamaHorn(context, roomName, myID, otherID);
-  }else if (card.name == 'НОСОРОГОРОГ') {
-    print('мы на условии что это НОСОРОГОРОГ');
-    await unicornBillHorn(context, roomName, myID, otherID);
-  }else if (card.name == 'КРУШЕРОГ') {
-    print('мы на условии что это КРУШЕРОГ');
-    await unicornDestructionHorn(context, roomName, myID, otherID);
-  }
-}
-if (card.name == 'ТОРПЕДНЫЙ НАРВАЛ') {
-  print('мы на условии что это ТОРПЕДНЫЙ НАРВАЛ');
-  await unicornTorpedoNarwhal(context, roomName, myID);
-}else if (card.name == 'БЕНЗОПИЛОРОГ') {
-  print('мы на условии что это БЕНЗОПИЛОРОГ');
-  await spellAttack(context, roomName, myID, otherID);
-}
-
-    await Game.changeGameStatus('inProcess', roomName);
-if(!isEvenJump || isEvenEffects) {
-  await Game.checkCountCardOnHand(
-    context,
-    roomName,
-    'hand',
-    Provider
-        .of<CurrentPlayerState>(context, listen: false)
-        .currentPlayer,
-    myID,
-    otherID,
-  );
-} else{
-  await Game.decreaseActCount(roomName);
-  await PlayerState.addCardPlayerDeck(roomName, jump!, 'effects', myID);
-}
-await PlayerState.updatePlayerDeck(roomName, [], 'effects', myID);
+    await Game.checkCountCardOnHand(
+      context,
+      roomName,
+      'hand',
+      myID,
+      otherID,
+    );
     await Game.updatePlayOutCard(roomName, null);
     print('мы закончили розыгрыш единорога');
   }
 
-  static Future<void> playOutUnicornForNoCurrentPlayer(
-      BuildContext context,
+  static Future<void> playOutUnicornForNoCurrentPlayer(BuildContext context,
+      String roomName,
+      CardModel? card,
+      String myID,
+      String otherID,
+      ) async {
+
+    bool isEven2 = await CheckPossibility.checkHavePandec(roomName, otherID);
+    bool isEven = await CheckPossibility.checkHavePandec(roomName, myID);
+
+      if (card!.name == 'БЕСЯЧИЙ КРЫЛОРОГ') {
+        await Game.changeGameStatus('inProcess', roomName);
+        print('мы на условии что это БЕСЯЧИЙ КРЫЛОРОГ');
+        await unicornInfuriatingWing(context, roomName, myID, otherID);
+      } else if (card.name == 'ЛАМАРОГ') {
+        await Game.changeGameStatus('inProcess', roomName);
+        print('мы на условии что это ЛАМАРОГ');
+        await unicornLamaHorn(context, roomName, myID, otherID);
+      } else if (card.name == 'КРУШЕРОГ' && isEven && isEven2) {
+        await Game.changeGameStatus('inProcess', roomName);
+        print('мы на условии что это КРУШЕРОГ и не штрафа пандец');
+        await unicornDestructionHorn(context, roomName, myID, otherID);
+      } else if (card.name == 'РУСАЛКОРОГ') {
+        await Game.changeGameStatus('inProcess', roomName);
+        print('мы на условии что это РУСАЛКОРОГ');
+        await unicornMermaidHorn(context, roomName, myID, otherID);
+      }
+
+  }
+
+
+  static Future<void> playOutUnicornReaction(BuildContext context,
       String roomName,
       CardModel? card,
       String myID,
       String otherID,
       ) async {
     await Game.changeGameStatus('inProcess', roomName);
-    if (card!.name == 'БЕСЯЧИЙ КРЫЛОРОГ') {
-      print('мы на условии что это БЕСЯЧИЙ КРЫЛОРОГ');
-      await unicornInfuriatingWing(context, roomName, myID, otherID);
-    } else if (card.name == 'ЛАМАРОГ') {
-      print('мы на условии что это ЛАМАРОГ');
-      await unicornLamaHorn(context, roomName, myID, otherID);
-    } else if (card.name == 'КРУШЕРОГ') {
-      print('мы на условии что это КРУШЕРОГ');
-      await unicornDestructionHorn(context, roomName, myID, otherID);
-    }else if (card.name == 'РУСАЛКОРОГ') {
-      print('мы на условии что это РУСАЛКОРОГ');
-      await unicornMermaidHorn(context, roomName, myID, otherID);
+
+    bool isEven2 = await CheckPossibility.checkHavePandec(roomName, myID);
+    bool isEven3 = await CheckPossibility.checkHavePandec(roomName, otherID);
+    bool isEven = await CheckPossibility.checkHaveSun(roomName, myID);
+
+    if (isEven2) {
+      if (isEven) {
+        if (card?.name == 'ФЕНИКСОРОГ') {
+          print('мы на условии что это ФЕНИКСОРОГ');
+          await Game.changeGameStatus('inProcess', roomName);
+          await unicornPhoenixHorn(context, roomName, myID, otherID);
+        } else if (card?.name == 'ЧЕРНЫЙ БРОНЕРОГ') {
+          await Game.changeGameStatus('inProcess', roomName);
+          print('мы на условии что это ЧЕРНЫЙ БРОНЕРОГ');
+          await unicornArmoredHorn(context, roomName, myID);
+        }else if (card?.name == 'НОЖЕРОГ' && isEven3) {
+          await Game.changeGameStatus('inProcess', roomName);
+          print('мы на условии что это НОЖЕРОГ');
+          await unicornKnifeHorn(context, roomName, myID, otherID);
+        }
+      }
     }
+
   }
 
+  static Future<void> playOutUnicornMyReaction(BuildContext context,
+      String roomName,
+      CardModel? card,
+      String myID,
+      String otherID,
+      ) async {
 
+
+    bool isEven2 = await CheckPossibility.checkHavePandec(roomName, myID);
+    bool isEven = await CheckPossibility.checkHaveSun(roomName, myID);
+
+    if (isEven2) {
+      print('no panda');
+      if (isEven) {
+        print('no sun');
+
+        if (card?.name == 'ФЕНИКСОРОГ') {
+          print('мы на условии что это ФЕНИКСОРОГ');
+          await Game.changeGameStatus('inProcess', roomName);
+          await unicornPhoenixHorn(context, roomName, myID, otherID);
+        } else if (card?.name == 'НОЖЕРОГ') {
+          await Game.changeGameStatus('inProcess', roomName);
+          print('мы на условии что это НОЖЕРОГ');
+          await unicornKnifeHorn(context, roomName, myID, otherID);
+        } else if (card?.name == 'ЧЕРНЫЙ БРОНЕРОГ') {
+          await Game.changeGameStatus('inProcess', roomName);
+          print('мы на условии что это ЧЕРНЫЙ БРОНЕРОГ');
+          await unicornArmoredHorn(context, roomName, myID);
+        }
+      }
+    }
+    await Game.changeGameStatus('inProcess', roomName);
+    print('закончили розыгрышь единорожков в май реактион');
+
+  }
 
 
 
@@ -1586,6 +1842,13 @@ ScrollForMultiDiscard(
             onCardTap: (context, CardModel? card)async{
           await Player.moveCardFromPDToPD(card!, roomName, 'stall', 'stall', otherID, myID);
             }));
+
+    // fineWire
+    await Game.changeGameStatus('fireWire', roomName);
+    print('поменяли статус на fireWire');
+    await Game.changeGameStatus('fineWire', roomName);
+    print('gjuvtyzkb cnfnec yf fineWine');
+    // await Game.changeGameStatus('playOutUnicorn', roomName);
   }
 
   static Future<void> bonusesDiscoBomb(
@@ -1680,7 +1943,7 @@ ScrollForMultiDiscard(
     await DialogForGame.show(context, cardDescription['АРТАБСТОЙЛО1']!, roomName, otherStall, myID, otherID,
         ScrollForGame(cards: otherStall, roomName: roomName, myID: myID, countDiscard: 1,
             onCardTap: (context, CardModel? card)async{
-              await Player.destroyUnicorn(card!, roomName, otherID);
+              await Player.destroyUnicorn(context, card!, roomName, otherID, myID);
             }));
 
   }
@@ -1775,6 +2038,8 @@ ScrollForMultiDiscard(
     }else if(card?.name == 'ДИСКОБОМБА'){
       print('на плэй бонус ДИСКОБОМБА ');
       await bonusesDiscoBomb(context, roomName, myID, otherID);
+      print('мы на дискобомбе разыгырваем колючую проволоку');
+
 
     }else if(card?.name == 'КОФЕЙНЫЙ ДЕБОШ'){
       print('на плэй бонус КОФЕЙНЫЙ ДЕБОШ ');
@@ -1783,10 +2048,201 @@ ScrollForMultiDiscard(
     }else if(card?.name == 'РАДУЖНОЕ ЛАССО'){
       print('на плэй бонус РАДУЖНОЕ ЛАССО ');
       await bonusesRainbowLasso(context, roomName, myID, otherID);
+      print('поменяли статус на playOutUnicorn');
+      await Game.changeGameStatus('playOutUnicorn', roomName);
+
     }
-    await Game.changeGameStatus('inProcess', roomName);
     print('мы закончили розыгрыш бонуса');
 
 
   }
+
+  static Future<void> playOutBonusesForNoCurrentPlayer(
+      BuildContext context,
+      String roomName,
+      CardModel? card,
+      String myID,
+      String otherID,
+      ) async{
+    await Game.changeGameStatus('inProcess', roomName);
+
+
+    if(card?.name == 'АРТАБСТОЙЛО'){
+      print('на АРТАБСТОЙЛО no current');
+      print('проверяем на наличиен колючей проволоки');
+
+      //fineWire
+      await Game.changeGameStatus('fineWire', roomName);
+    }else if(card?.name == 'ДИСКОБОМБА'){
+      print('на плэй бонус ДИСКОБОМБА no current');
+      print('проверяем на наличиен колючей проволоки');
+      CardModel? card = await Game.getCardRemember(roomName);
+      print('карта для уничтожения ${card!.name}');
+      if(card!.type == CardClass.unicorn || card!.type == CardClass.baby){
+        //fineWire
+        await Game.changeGameStatus('fineWire', roomName);      }
+
+    }else if(card?.name == 'РАДУЖНОЕ ЛАССО'){
+      print('на плэй бонус РАДУЖНОЕ ЛАССО no current');
+      print('проверяем на наличиен колючей проволоки');
+    }
+    print('мы закончили розыгрыш бонуса no current');
+
+
+  }
+
+
+  static Future<void> playOutBonusOnDeck(
+      BuildContext context,
+      String roomName,
+      CardModel newCard,
+      String myID,
+      String otherID,
+      ) async {
+
+    await Game.changeGameStatus('inPricess', roomName);
+
+    print('мы на функции он бонус дэк');
+    String currentPlayer = Provider
+        .of<CurrentPlayerState>(context, listen: false)
+        .currentPlayer;
+
+    await GameState.removeCardGameDeck(
+      roomName,
+      newCard,
+      'playingCardOnTable',
+    );
+    print('мы перед чек кард он хэнд');
+    await Game.checkCountCardOnHand(
+      context,
+      roomName,
+      'hand',
+      // Provider
+      //     .of<CurrentPlayerState>(context, listen: false)
+      //     .currentPlayer,
+      // myID,
+      //поменяли местами
+      otherID,
+      myID,
+      // otherID,
+    );
+
+    await PlayerState.addCardPlayerDeck(
+        roomName, newCard, 'bonuses', currentPlayer);
+
+    await Game.updatePlayOutCard(roomName, null);
+     print('закончили выкладывать бонус на стол');
+
+}
+
+
+  static Future<void> fineWire(
+      BuildContext context,
+      String roomName,
+      String myID,
+      String otherID,
+      ) async{
+    print('est li wire');
+
+    await Game.changeGameStatus('inProcess', roomName);
+    bool isEven = await CheckPossibility.checkHavePandec(roomName, myID);
+    bool isEven1 = await CheckPossibility.checkHaveWire(roomName, myID);
+    if(isEven && isEven1){
+      print('est play out finw wire и уничтожаем мы единорога или малыша');
+      List<CardModel>? deck = await PlayerState.getPlayerDeck(roomName, 'hand', myID);
+      await DialogForGame.show(context, cardDescription['КОЛЮЧАЯ ПРОВОЛКА']!, roomName, deck, myID, otherID,
+          ScrollForGame(
+              cards: deck, roomName: roomName, myID: myID, countDiscard: 1,
+              onCardTap: (context, CardModel? card)async{
+                await Player.cardDiscard(context, roomName, card!, myID);
+              }));
+      }
+    print('no wire');
+
+  }
+
+  static Future<void> finesMiniStall(
+      BuildContext context,
+      String roomName,
+      String myID,
+      String otherID,
+      ) async {
+    // await Game.changeGameStatus('inProcess', roomName);
+    bool isEven = await CheckPossibility.checkHaveMiniStall(
+        context, roomName, myID);
+    if (isEven) {
+      List<CardModel>? stall = await PlayerState.getPlayerDeck(
+          roomName, 'stall', myID);
+      if (stall!.length > 5) {
+        bool isEven = stall?.any((card) => card.name == 'ЖИРНОРОГ') ?? false;
+        int countCardsOnHand = stall?.length ?? 0;
+        if (isEven) {
+          countCardsOnHand++;
+        }
+        int difference = 0;
+
+        if (countCardsOnHand > 5) {
+          difference = countCardsOnHand - 5;
+          Provider.of<DiscardCardProvider>(context, listen: false)
+              .updateDiscardCard(difference);
+
+          await DialogForGame.show(
+              context,
+              '${cardDescription['МИНИ-СТОЙЛО']!} $difference unicorn/s',
+              roomName,
+              stall,
+              myID,
+              otherID,
+              ScrollForGame(cards: stall,
+                  roomName: roomName,
+                  myID: myID,
+                  countDiscard: difference,
+                  onCardTap: (context, CardModel? card) async {
+                    await Player.moveCardFromPDToGD(
+                        card!, roomName, 'stall', 'discardPile', myID);
+                  })
+          );
+        }
+      }
+    }
+  }
+  
+
+ static Future<void> playOutFinesOnDeck(
+      BuildContext context,
+      String roomName,
+      CardModel newCard,
+      String myID,
+      String otherID,
+      ) async{
+
+    String otherId = Provider
+        .of<CurrentPlayerState>(context, listen: false)
+        .currentPlayer == myID ? otherID : myID;
+
+    await PlayerState.addCardPlayerDeck(
+        roomName, newCard, 'fines', otherId);
+
+    await GameState.removeCardGameDeck(
+      roomName,
+      newCard,
+      'playingCardOnTable',
+    );
+print('чеккард он хэнд на выкладке штрафов');
+    await Game.checkCountCardOnHand(
+      context,
+      roomName,
+      'hand',
+      // Provider
+      //     .of<CurrentPlayerState>(context, listen: false)
+      //     .currentPlayer,
+      otherId,
+      myID,
+      // otherID,
+    );
+    await Game.updatePlayOutCard(roomName, null);
+    print('обнулили карту в штрафах');
+
+  }
+
 }

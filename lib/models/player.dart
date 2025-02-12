@@ -1,21 +1,15 @@
 import 'dart:math';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/models/player_state.dart';
-import 'package:unstable_unicorns/provider/discard_card_provider.dart';
-import 'package:unstable_unicorns/provider/game_data_provider.dart';
+import 'package:unstable_unicorns/services/dialog/dialog_kill_tpru.dart';
 import 'package:unstable_unicorns/services/dialog/dialog_window.dart';
-import 'package:unstable_unicorns/services/snack_bar.dart';
-import 'package:unstable_unicorns/widgets/scroll/scroll_for_game.dart';
 import '../const/const.dart';
 import '../const/immortal_unicorns.dart';
-import '../provider/current_player_provider.dart';
-import '../provider/play_out_card_provider.dart';
 import '../services/dialog/dialog_for_TPRU.dart';
 import '../services/dialog/dialog_whithoutTPRU.dart';
 import 'card.dart';
+import 'chek_possibility.dart';
 import 'game.dart';
 import 'game_state.dart';
 
@@ -52,14 +46,6 @@ class Player {
         otherID,
       );
 
-      // String newCurrentPlayer = Provider
-      //     .of<CurrentPlayerState>(context, listen: false)
-      //     .currentPlayer;
-
-      // String? userNickname = await Game.getNicknameById(
-      //   otherID,
-      //   roomName,
-      // );
       await Game.changeGameStatus(
         'checkTPRU',
         roomName,
@@ -74,10 +60,11 @@ class Player {
       String myID,
       String otherID,
       String roomName,) async {
-
 // получаем значение разыгрываемой карты
     CardModel? newCard = await Game.getPlayOutCard(roomName);
     print('разыгрываемая карта в чектпру ${newCard?.name}');
+    CardModel? tpru;
+    CardModel? tpruKill;
 
     List<CardModel> handCards = await PlayerState.getPlayerDeck(
       roomName,
@@ -91,30 +78,65 @@ class Player {
       currentPlayer,
     ) as List<CardModel>;
 
-    bool hasTpruCard = handCards.any((card) => card.type == CardClass.tpru);
-    bool hasNoTpruUnicorn = stallDeck.any((card)=> card.name == 'ЖИРНОРОГ');
+    bool hasTpruCard = handCards.any((card) =>
+    card.type == CardClass.tpru && card.id != '15tpru');
+    bool hasTpruCardKill = handCards.any((card) => card.id == '15tpru');
+    bool hasNoTpruUnicorn = stallDeck.any((card) => card.name == 'ЖИРНОРОГ');
+    //если нет штрафа то все ок если есть штраф то фалсе
+    bool hasSun = await CheckPossibility.checkHaveSun(roomName, myID);
 
-    if (hasTpruCard && !hasNoTpruUnicorn) {
-      CardModel tpru = handCards.firstWhere((card) =>
-      card.type == CardClass.tpru);
+    if (hasTpruCardKill) {
+      tpruKill = handCards.firstWhere((card) => card.id == '15tpru');
+    }
 
-      await DialogForTPRU.show(
-        context,
-        tpru,
-        currentPlayer,
-        myID,
-        otherID,
-        newCard,
-        roomName,
-      );
-    } else {
-      await DialogWithoutTPRU.show(
-        context,
-        roomName,
-        myID,
-        otherID,
-        newCard,
-      );
+    if (hasTpruCard) {
+      tpru = handCards.firstWhere((card) => card.type == CardClass.tpru &&
+          card.id != '15tpru');
+      print('есть ли тпру ${tpru.name}');
+    }
+    //add
+    if (!hasNoTpruUnicorn || hasSun) {
+      if (hasTpruCard || hasTpruCardKill) {
+        if (hasTpruCard && hasTpruCardKill) {
+          await DialogForKillTPRU.show(
+              context,
+              currentPlayer,
+              myID,
+              otherID,
+              newCard,
+              tpru!,
+              tpruKill!,
+              handCards,
+              roomName);
+        } else if (hasTpruCardKill && !hasTpruCard) {
+          await DialogForTPRU.show(
+              context,
+              tpruKill!,
+              currentPlayer,
+              myID,
+              otherID,
+              newCard,
+              roomName);
+        } else{
+          await DialogForTPRU.show(
+            context,
+            tpru!,
+            currentPlayer,
+            myID,
+            otherID,
+            newCard,
+            roomName,
+          );
+        }
+      } else {
+        await DialogWithoutTPRU.show(
+          context,
+          roomName,
+          myID,
+          otherID,
+          newCard,
+        );
+      }
     }
   }
 
@@ -123,30 +145,9 @@ class Player {
       CardModel newCard,
       String roomName,
       String myID,
-      String otherID,) async {
-    String currentPlayer = Provider
-        .of<CurrentPlayerState>(context, listen: false)
-        .currentPlayer;
+      String otherID,
+      ) async {
 
-    String otherId = currentPlayer == myID ? otherID : myID;
-    // CardModel? jump;
-    // List<CardModel>? bonuses = await PlayerState.getPlayerDeck(roomName, 'bonuses', myID);
-    // List<CardModel>? fines = await PlayerState.getPlayerDeck(roomName, 'fines', myID);
-    // List<CardModel>? effects = await PlayerState.getPlayerDeck(roomName, 'effects', myID);
-    // bool isEven = fines?.any((card)=> card.name =='ОТСТОЙЛО') ?? false;
-    //
-    // bool isEvenJump = bonuses?.any((card)=> card.name =='ПРЫГ-СКОК') ?? false;
-    // print('есть ли карта ПРЫГ-СКОК $isEvenJump ');
-    // bool isEvenEffects = effects?.any((card)=> card.name =='ПРЫГ-СКОК') ?? false;
-    // print('есть ли карта in effects $isEvenEffects ');
-    //
-    // if(isEvenJump && !isEven){
-    //   jump = effects?.firstWhere((card)=> card.name =='ПРЫГ-СКОК');
-    //   print('jump ${jump!.name} ');
-    //
-    // }
-
-//единорог
     if (newCard.type == CardClass.unicorn) {
       print('тип карты единорог');
       await GameState.removeCardGameDeck(
@@ -154,80 +155,26 @@ class Player {
         newCard,
         'playingCardOnTable',
       );
+      print('поменяли статус в единороге');
       await Game.changeGameStatus('playOutUnicorn', roomName);
     }
     else if (newCard.type == CardClass.spell) {
       print('тип карты заклинание');
       await Game.changeGameStatus('playOutSpell', roomName);
+      print('поменяли статус в заклинании');
+
     }
     else if (newCard.type == CardClass.bonus) {
       print('тип карты бонус');
-
-      await PlayerState.addCardPlayerDeck(
-          roomName, newCard, 'bonuses', currentPlayer);
-      await GameState.removeCardGameDeck(
-        roomName,
-        newCard,
-        'playingCardOnTable',
-      );
-      // if( isEven || !isEvenJump || isEvenEffects) {
-      //   print('нет прыг-скок или он не повторяется');
-        await Game.checkCountCardOnHand(
-          context,
-          roomName,
-          'hand',
-          Provider
-              .of<CurrentPlayerState>(context, listen: false)
-              .currentPlayer,
-          myID,
-          otherID,
-        );
-      // } else{
-      //   print('есть прыг-скок или  2 хода');
-      //   await Game.decreaseActCount(roomName);
-      //   await PlayerState.addCardPlayerDeck(roomName, jump!, 'effects', myID);
-      // }
-      // await PlayerState.updatePlayerDeck(roomName, [], 'effects', myID);
-      await Game.updatePlayOutCard(roomName, null);
-      print('обнулили карту в бонусах или штрафах');
-
+      await CardModel.playOutBonusOnDeck(
+          context, roomName, newCard, myID, otherID);
     }
     else if (newCard.type == CardClass.fine) {
-    print('тип карты штраф');
-
-    await PlayerState.addCardPlayerDeck(
-    roomName, newCard, 'fines', otherId);
-
-    await GameState.removeCardGameDeck(
-      roomName,
-      newCard,
-      'playingCardOnTable',
-    );
-    // if( isEven || !isEvenJump || isEvenEffects) {
-    //   print('нет прыг-скок или он не повторяется');
-      await Game.checkCountCardOnHand(
-        context,
-        roomName,
-        'hand',
-        Provider
-            .of<CurrentPlayerState>(context, listen: false)
-            .currentPlayer,
-        myID,
-        otherID,
-      );
-    // } else{
-    //   print('есть прыг-скок или  2 хода');
-    //   await Game.decreaseActCount(roomName);
-    //   await PlayerState.addCardPlayerDeck(roomName, jump!, 'effects', myID);
-    // }
-    await PlayerState.updatePlayerDeck(roomName, [], 'effects', myID);
-    await Game.updatePlayOutCard(roomName, null);
-    print('обнулили карту в штрафах');
-
+      print('тип карты штраф');
+      await CardModel.playOutFinesOnDeck(context, roomName, newCard, myID, otherID);
     }
+  }
 
-
-    }
 
   static Future<bool> checkCardOnTableForDraw(String roomName) async {
     try {
@@ -256,26 +203,95 @@ class Player {
 
 //уничтожить единорога соперника
   static Future<void> destroyUnicorn(
+      BuildContext context,
       CardModel? destroyCard,
       String roomName,
       String otherID,
+      String myID,
+
       ) async {
-    await PlayerState.removeCardFromPlayerDeck(
-        roomName, destroyCard!, 'stall', otherID);
-    if (immortalUnicorns.contains(destroyCard.name)) {
-      print('Имя карты "${destroyCard
-          .name}" совпадает с одним из известных имен единорогов.');
-      await PlayerState.addCardPlayerDeck(
-          roomName, destroyCard, 'hand', otherID);
-    } else if (
-    destroyCard.type!= CardClass.baby) {
-      print('убиваемый единорожек это не малыш');
-      await GameState.updateWithNewCardGameDeck(
-          roomName,
-          destroyCard,
-          'discardPile');
+    List<CardModel>? stall = await PlayerState.getPlayerDeck(
+        roomName, 'stall', otherID);
+
+    bool isEvenArmoredHorn = stall?.any((card) =>
+    card.name == 'ЧЕРНЫЙ БРОНЕРОГ') ?? false;
+    print('есть ли в дестрой бронерог$isEvenArmoredHorn');
+
+    if (!isEvenArmoredHorn) {
+      if (immortalUnicorns.contains(destroyCard!.name)) {
+        print('Имя карты "${destroyCard.name}" совпадает с одним из известных имен единорогов.');
+        await PlayerState.removeCardFromPlayerDeck(
+            roomName, destroyCard!, 'stall', otherID);
+        await PlayerState.addCardPlayerDeck(
+            roomName, destroyCard, 'hand', otherID);
+
+        //fireWire
+        await Game.changeGameStatus('fineWire', roomName);
+
+      } else if (
+      destroyCard.name == 'ФЕНИКСОРОГ') {
+        print('убиваемый единорожек ФЕНИКСОРОГ');
+        CardModel? armoredHorn = stall!.firstWhere((card) =>
+        card.name == 'ФЕНИКСОРОГ');
+        print('чему равна сохраненная карта в фениксороге ${armoredHorn.name}');
+        await Game.updatePlayOutCard(roomName, armoredHorn);
+        await Game.changeGameStatus('playOutUnicornReaction', roomName);
+      } else if (destroyCard.name == 'НОЖЕРОГ') {
+        await PlayerState.removeCardFromPlayerDeck(
+            roomName, destroyCard!, 'stall', otherID);
+        await GameState.updateWithNewCardGameDeck(
+            roomName, destroyCard, 'discardPile');
+        CardModel? armoredHorn = stall!.firstWhere((card) =>
+        card.name == 'НОЖЕРОГ');
+        print('чему равна сохраненная карта в НОЖЕРОГ ${armoredHorn.name}');
+        await Game.updatePlayOutCard(roomName, armoredHorn);
+
+        // fireWire
+        await Game.changeGameStatus('fineWire', roomName);
+
+        await Game.changeGameStatus(
+            'playOutUnicornReaction', roomName);
+      } else if (
+      destroyCard.type != CardClass.baby) {
+        await PlayerState.removeCardFromPlayerDeck(
+            roomName, destroyCard!, 'stall', otherID);
+        print('убиваемый единорожек это не малыш');
+        await GameState.updateWithNewCardGameDeck(
+            roomName,
+            destroyCard,
+            'discardPile');
+//fireWire
+        await Game.changeGameStatus('fineWire', roomName);
+
+      } else {
+        print('убиваем черного бронерога и не малышей');
+        await PlayerState.removeCardFromPlayerDeck(
+            roomName, destroyCard!, 'stall', otherID);
+        //fireWire
+        await Game.changeGameStatus('fineWire', roomName);
+      }
+    } else if (destroyCard!.name == 'ЧЕРНЫЙ БРОНЕРОГ') {
+        await PlayerState.removeCardFromPlayerDeck(
+            roomName, destroyCard!, 'stall', otherID);
+        print('убиваемый единорожек это не малыш');
+        await GameState.updateWithNewCardGameDeck(
+            roomName,
+            destroyCard,
+            'discardPile');
+        //fireWire
+        await Game.changeGameStatus('fineWire', roomName);
+      } else {
+        print('убиваемый единорожек не ЧЕРНЫЙ БРОНЕРОГ но черный броенрог есть');
+        await Game.updateCardRemember(roomName, destroyCard);
+        CardModel? remember = await Game.getCardRemember(roomName);
+        print('получилось ли обновить новую карту в бронероге ${remember?.name}');
+        CardModel? armoredHorn = stall!.firstWhere((card) =>
+        card.name == 'ЧЕРНЫЙ БРОНЕРОГ');
+        await Game.updatePlayOutCard(roomName, armoredHorn);
+        await Game.changeGameStatus(
+            'playOutUnicornReaction', roomName);
+      }
     }
-  }
 
   //уничтожить бонус
   static Future<void> destroyBonus(CardModel? destroyCard,
@@ -322,24 +338,76 @@ class Player {
   }
 
 //принести в жертву единорога
-  static Future<void> sacrificeUnicorn(roomName,
+  static Future<void> sacrificeUnicorn(
+      BuildContext context,
+      roomName,
       destroyCard,
-      myID,) async {
-    await PlayerState.removeCardFromPlayerDeck(
-        roomName, destroyCard!, 'stall', myID);
-    if (immortalUnicorns.contains(destroyCard.name)) {
-      print('Имя карты "${destroyCard
-          .name}" совпадает с одним из известных имен единорогов.');
-      await PlayerState.addCardPlayerDeck(
-          roomName, destroyCard, 'hand', myID);
-    } else if (
-    destroyCard.name != 'Baby') {
-      await GameState.updateWithNewCardGameDeck(
-          roomName, destroyCard!, 'discardPile');
-    } else {
-      await PlayerState.removeCardFromPlayerDeck(
-          roomName, destroyCard!, 'stall', myID);
-    }
+      myID,
+      ) async {
+
+    List<CardModel>? stall = await PlayerState.getPlayerDeck(
+        roomName, 'stall', myID);
+
+      if (immortalUnicorns.contains(destroyCard.name)) {
+        await Game.updateCardRemember(roomName, destroyCard);
+        print('Имя карты "${destroyCard.name}" совпадает с одним из известных имен единорогов.');
+        await PlayerState.removeCardFromPlayerDeck(
+            roomName, destroyCard!, 'stall', myID);
+        await PlayerState.addCardPlayerDeck(
+            roomName, destroyCard, 'hand', myID);
+
+        // fineWire
+        await Game.changeGameStatus('fireWire', roomName);
+
+
+      }  else if (
+      destroyCard.name == 'ФЕНИКСОРОГ') {
+        await Game.updateCardRemember(roomName, destroyCard);
+        print('destroyCard в плэер дестрой юникорн $destroyCard');
+        print('приносим в жертву единорожек ФЕНИКСОРОГ');
+        CardModel? armoredHorn = stall!.firstWhere((card)=> card.name == 'ФЕНИКСОРОГ');
+        print('чему равна сохраненная карта в жертве ФЕНИКСОРОГ ${armoredHorn.name}');
+        await Game.updatePlayOutCard(roomName, armoredHorn);
+        await Game.changeGameStatus('playOutUnicornMyReaction', roomName);
+
+      } else if(destroyCard.name == 'НОЖЕРОГ') {
+        await PlayerState.removeCardFromPlayerDeck(
+            roomName, destroyCard!, 'stall', myID);
+        await GameState.updateWithNewCardGameDeck(
+            roomName, destroyCard, 'discardPile');
+        // fineWire
+        // await Game.changeGameStatus('fireWire', roomName);
+
+        await Game.updateCardRemember(roomName, destroyCard);
+        print('destroyCard в плэер дестрой юникорн $destroyCard');
+        CardModel? armoredHorn = stall!.firstWhere((card)=> card.name == 'НОЖЕРОГ');
+        print('чему равна сохраненная карта в жертве НОЖЕРОГ ${armoredHorn.name}');
+        await Game.updatePlayOutCard(roomName, armoredHorn);
+        await Game.changeGameStatus('playOutUnicornMyReaction', roomName);
+        print('новая игровая карта в ножероге $armoredHorn');
+
+      } else if (
+      destroyCard.type != CardClass.baby) {
+        await Game.updateCardRemember(roomName, destroyCard);
+        print('destroyCard в плэер дестрой юникорн $destroyCard');
+        print('убиваемый единорожек это не малыш');
+        await GameState.updateWithNewCardGameDeck(
+            roomName,
+            destroyCard,
+            'discardPile');
+        await PlayerState.removeCardFromPlayerDeck(
+            roomName, destroyCard!, 'stall', myID);
+
+        // fineWire
+        await Game.changeGameStatus('fireWire', roomName);
+
+      } else {
+        print('destroyCard в плэер дестрой юникорн $destroyCard');
+        await PlayerState.removeCardFromPlayerDeck(
+            roomName, destroyCard!, 'stall', myID);
+        // fineWire
+        await Game.changeGameStatus('fireWire', roomName);
+      }
   }
 
   //принести в жертву бонус
@@ -395,25 +463,61 @@ class Player {
 
 
 // перенести карту из рук в руки, со стола в руки
-  static Future<void> moveCardFromPDToPD(CardModel card,
+  static Future<void> moveCardFromPDToPD(
+      CardModel card,
       String roomName,
       String fromDeck,
       String toDeck,
       String fromID,
-      String toID,) async {
+      String toID,
+      ) async {
+    print('move card ${card.name}');
+    List<CardModel>? updatedStall1 = await PlayerState.getPlayerDeck(
+        roomName, 'stall', toID);
+    print('Updated stall do adding card: ${updatedStall1!.length}');
+
+    print('Attempting to move card ${card.name} from $fromDeck to $toDeck');
     await PlayerState.removeCardFromPlayerDeck(
         roomName, card, fromDeck, fromID);
     await PlayerState.addCardPlayerDeck(roomName, card, toDeck, toID);
+
+    List<CardModel>? updatedStall = await PlayerState.getPlayerDeck(
+        roomName, 'stall', toID);
+    print('Updated stall after adding card: ${updatedStall!.length}');
+    // add play out card
+    if (card.type != CardClass.baby) {
+      await Game.updatePlayOutCard(roomName, card);
+
+      CardModel? cards = await Game.getPlayOutCard(roomName);
+      print('какую карту поместили в moveCardFromGDToPD ${cards!.name}');
+    }
   }
 
   // взять карту из колоды игры на руки
-  static Future<void> moveCardFromGDToPD(CardModel card,
+  static Future<void> moveCardFromGDToPD(
+      CardModel card,
       String roomName,
       String fromDeck,
       String toDeck,
       String toID,) async {
+    print('что за карту перемещаем в moveCardFromGDToPD ${card.name}');
     await GameState.removeCardGameDeck(roomName, card, fromDeck);
     await PlayerState.addCardPlayerDeck(roomName, card, toDeck, toID);
+    await Game.updatePlayOutCard(roomName, card);
+    CardModel? cards = await Game.getPlayOutCard(roomName);
+    print('какую карту поместили в moveCardFromGDToPD ${cards!.name}');
+
+  }
+
+  static Future<void> moveCardFromPDToGD(CardModel card,
+      String roomName,
+      String fromDeck,
+      String toDeck,
+      String fromID,
+      ) async {
+    print('что за карту перемещаем в moveCardFromGDToPD ${card.name}');
+    await PlayerState.removeCardFromPlayerDeck(roomName, card, fromDeck, fromID);
+await GameState.updateWithNewCardGameDeck(roomName, card, toDeck);
   }
 
   //all stall
@@ -446,7 +550,8 @@ class Player {
   static Future<List<CardModel>?> takeCardOnHand(
       CardModel card,
       String roomName,
-      String playerID,) async {
+      String playerID,
+      ) async {
     if (card.type == CardClass.fine) {
       await PlayerState.removeCardFromPlayerDeck(
           roomName, card, 'fines', playerID);
@@ -459,9 +564,23 @@ class Player {
         await PlayerState.removeCardFromPlayerDeck(
             roomName, card, 'stall', playerID);
         await PlayerState.addCardPlayerDeck(roomName, card, 'hand', playerID);
+        bool isEven = await CheckPossibility.checkHaveWire(roomName, playerID);
+        if(isEven) {
+          print('проволока есть');
+
+          //fineWire
+          await Game.changeGameStatus('fireWire', roomName);
+          print('поменяли статус');
+        }
       } else if (card.type == CardClass.baby){
       await PlayerState.removeCardFromPlayerDeck(
           roomName, card, 'stall', playerID);
+      bool isEven = await CheckPossibility.checkHaveWire(roomName, playerID);
+      if(isEven) {
+        print('проволока есть');
+        await Game.changeGameStatus('fireWire', roomName);
+        print('поменяли статус');
+      }
     }
   }
 
@@ -506,5 +625,7 @@ class Player {
 
     await GameState.updateDeck(roomName, deck, 'deck');
   }
+
+
 
 }

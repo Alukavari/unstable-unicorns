@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:unstable_unicorns/services/snack_bar.dart';
 import 'package:unstable_unicorns/services/stream_act_count.dart';
-import 'package:unstable_unicorns/services/stream_play_ourt_card_status.dart';
 import 'package:unstable_unicorns/widgets/button/custom_button_change.dart';
 import 'package:unstable_unicorns/widgets/discard_pile_widget.dart';
 import 'package:unstable_unicorns/widgets/hand_card_widget.dart';
@@ -12,10 +11,7 @@ import 'package:unstable_unicorns/widgets/my_stall_widget.dart';
 import 'package:unstable_unicorns/widgets/other_bonuses_fines.dart';
 import 'package:unstable_unicorns/widgets/other_stall_widget.dart';
 import '../models/card.dart';
-import '../models/deck.dart';
 import '../models/game.dart';
-import '../models/game_state.dart';
-import '../models/player_state.dart';
 import '../provider/current_player_provider.dart';
 import '../services/stream_card_action.dart';
 import '../widgets/card_on_table_widget.dart';
@@ -44,10 +40,7 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
   String otherID = '';
   String myEmail = '';
 
-  List<CardModel> uniDeck = [];
-  List<CardModel> allDeck = [];
   String currentPlayer = '';
-  int countTakeCards = 1; //поменяли
   List<CardModel> discardPile = [];
   List<CardModel> playingCardOnTable = [];
 
@@ -95,14 +88,11 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
     }
   }
 
-  Future<void> _initializeGame() async {
+  Future<void> _initializeGameOnce() async {
     await _getNicknameOpponent();
     await _getPlayerHashcode();
     if (otherPlayer.isNotEmpty && myID.isNotEmpty && otherID.isNotEmpty) {
-      await Game.startGame(widget.playersRoom, otherID, myID);
-      await GameState.updateDeck(widget.playersRoom, allDeck, 'deck');
-      await PlayerState.drawnCards(
-          widget.playersRoom, context, uniDeck, allDeck, 5, myID, otherID);
+      print('не равно нулю');
       currentPlayer = await Game.currentPlayer(widget.playersRoom);
       myEmail = await Game.getEmailByID(myID) ?? '';
     }
@@ -111,12 +101,8 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
   @override
   void initState() {
     super.initState();
-    allDeck.addAll(cards);
-    uniDeck.addAll(babyDeck);
-    _getNicknameOpponent();
-
     if (!isInitialized) {
-      _initializeGame();
+      _initializeGameOnce();
       isInitialized = true;
     }
   }
@@ -155,47 +141,54 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                             .doc('room')
                             .snapshots(),
                         builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return const CircularProgressIndicator();
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Container();
+                          } else if (snapshot.hasError) {
+                            return Container();
+                          } else if (!snapshot.hasData ||
+                              snapshot.data == null ||
+                              !snapshot.data!.exists) {
+                            return Container();
+                          } else {
+                            var data = snapshot.data!.data() as Map<
+                                String,
+                                dynamic>;
+
+                            String currentPlayer = data['currentTurn'] ?? '';
+                            String gameStatus = data['gameStatus'];
+                            String? gameWin = data['gameWin'];
+                            print('текущий статус игры $gameStatus');
+
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              Provider.of<CurrentPlayerState>(context,
+                                  listen: false)
+                                  .updateCurrentPlayer(currentPlayer);
+                            });
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              Game.statusGameAction(
+                                  context,
+                                  widget.playersRoom,
+                                  myID,
+                                  otherID,
+                                  gameStatus,
+                                  currentPlayer,
+                                  gameWin!,
+                                  widget.userNickname,
+                                  otherPlayer,
+                                  myEmail);
+                            });
+
+                            // print('получили дату из провайдера $currentPlayer');
+                            return Align(
+                              alignment: Alignment.topRight,
+                              child: ButtonChange(
+                                myID: myID,
+                                otherID: otherID,
+                                roomName: widget.playersRoom,
+                              ),
+                            );
                           }
-                          final data =
-                              snapshot.data?.data() as Map<String, dynamic>;
-
-                          String currentPlayer = data['currentTurn'] ?? '';
-                          String gameStatus = data['gameStatus'];
-                          String? gameWin = data['gameWin'];
-                          // bool isEven = gameWin.isNotEmpty ? true : false;
-                          print('текущий статус игры $gameStatus');
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            Provider.of<CurrentPlayerState>(context,
-                                    listen: false)
-                                .updateCurrentPlayer(currentPlayer);
-                          });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-
-                            Game.statusGameAction(
-                                context,
-                                widget.playersRoom,
-                                myID,
-                                otherID,
-                                gameStatus,
-                                currentPlayer,
-                                gameWin!,
-                                widget.userNickname,
-                                otherPlayer,
-                                myEmail);
-    });
-
-                          // print('получили дату из провайдера $currentPlayer');
-                          return Align(
-                            alignment: Alignment.topRight,
-                            child: ButtonChange(
-                              myID: myID,
-                              otherID: otherID,
-                              roomName: widget.playersRoom,
-                            ),
-                          );
                         }),
                   ],
                 ),
@@ -221,7 +214,7 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                     BuildDeckWidget(
                         roomName: widget.playersRoom,
                         myID: myID,
-                        countTakeCards: countTakeCards),
+                        countTakeCards: 1),
                     const SizedBox(width: 10),
                     //on table
                     Expanded(
@@ -238,7 +231,7 @@ class _GameConsoleScreenState extends State<GameConsoleScreen> {
                       child: BuildDiscardPileWidget(
                         roomName: widget.playersRoom,
                         myID: myID,
-                        countTakeCards: countTakeCards,
+                        countTakeCards: 1,
                       ),
                     ),
                   ],

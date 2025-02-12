@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:unstable_unicorns/models/deck.dart';
-import 'package:unstable_unicorns/models/player_state.dart';
 import '../../models/card.dart';
 import '../../models/game.dart';
-import '../../models/player.dart';
 import '../../services/dialog/dialog_window.dart';
 
 class ScrollForMovingCard extends StatelessWidget {
@@ -36,7 +33,6 @@ class ScrollForMovingCard extends StatelessWidget {
       count++;
       if(count >= countDiscard ){
         await Game.cleanCardAction(roomName);
-        await PlayerState.removeCardFromPlayerDeck(roomName, card!, 'stall', myID);
         Navigator.of(context).pop();
       }
     }
@@ -48,11 +44,14 @@ class ScrollForMovingCard extends StatelessWidget {
       backgroundColor: Colors.white,
       content: SizedBox(
         width: 110, //
-        child: ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: cards?.length,
-          itemBuilder: (context, index) {
+        child: SingleChildScrollView(
+        child: Column(
+        children: List.generate(cards?.length ?? 0, (index) {
+        // child: ListView.builder(
+        //   physics: const NeverScrollableScrollPhysics(),
+        //   shrinkWrap: true,
+        //   itemCount: cards?.length,
+        //   itemBuilder: (context, index) {
             return Container(
               width: 110,
               margin: const EdgeInsets.all(5),
@@ -76,6 +75,10 @@ class ScrollForMovingCard extends StatelessWidget {
           },
         ),
       ),
+          //add
+        ),
+      ),
+      //add
     );
   }
 }

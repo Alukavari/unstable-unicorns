@@ -3,7 +3,7 @@ Map<String, String> checkText = {
   'ЦЕЛЬСЬ!':'You cannot implement the card conditions. Change another card',
   'ЕДИНОРОЖИЙ ЯД': 'Impossible to implement the card',
   'ПИНОК': 'The other player has no cards on the table',
-  'ОБМЕН ЕДИНОРОЖКАМИ': 'The other player has no unicorns on the stall',
+  'ОБМЕН ЕДИНОРОЖКАМИ': 'No unicorns on the stall',
   'НАГЛЫЙ ГРАБЕЖ':'You cannot implement the card conditions. Change another card',
   'ПРИЦЕЛЬНАЯ АТАКА':'You cannot implement the card conditions. Change another card',
   'ПЕРЕЗАГРУЗКА':'You cannot implement the card conditions. Change another card',
@@ -20,6 +20,7 @@ Map<String, String> checkText = {
   'ВСТРЯСКА':'Impossible to implement the card, not enough cards in the deck. Change another card',
   'НОСОРОГОРОГ':'You can\'t play the НОСОРОГОРОГ card you\'ve already take a card from the deck ',
   'НОСОРОГОРОГ1':'You can\'t destroy another player\'s unicorns',
+  'НОСОРОГОРОГ2':'You can\'t use the НОСОРОГОРОГ card',
 
   'ХВАТЬ-ХВАТЬ':'Not enough cards',
   'АРТАБСТОЙЛО':'Not enough cards',

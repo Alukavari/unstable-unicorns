@@ -22,30 +22,6 @@ class BuildDiscardPileWidget extends StatelessWidget {
 
   List<CardModel> _cards = [];
 
-  // void _handleTap(
-  //   BuildContext context,
-  //   List<CardModel> cards,
-  //   int countTakeCards,
-  //   String roomName,
-  //   String currentPlayer,
-  // )
-  // {
-  //   if (Provider
-  //       .of<GameDataProvider>(context, listen: false)
-  //       .actCount == 3) {
-  //     DialogForDeck.show(
-  //         context,
-  //         countTakeCards,
-  //         'Add this card',
-  //         roomName,
-  //         cards,
-  //         'hand',
-  //         'deck',
-  //         currentPlayer);
-  //     print('на выполнении нажатия на сброс');
-  //   }
-  // }
-
     bool _listEqual(List<CardModel> a, List<CardModel> b) {
       if (a.length != b.length) return false;
       for (int i = 0; i < a.length; i++) {
@@ -98,7 +74,7 @@ class BuildDiscardPileWidget extends StatelessWidget {
               child: Consumer<CurrentPlayerState>(
                 builder: (context, currentPlayerState, child) {
                   final currentPlayer = currentPlayerState.currentPlayer;
-                  final isMyTurn = currentPlayer == myID;
+                  // final isMyTurn = currentPlayer == myID;
 
                   return GestureDetector(
                     onTap: null,

@@ -49,13 +49,13 @@ class _ScrollForDestroy extends State<ScrollForDestroy> {
           await Player.destroyBonus(card, widget.roomName, widget.otherID);
 break;
         case CardClass.unicorn:
-          await Player.destroyUnicorn(card, widget.roomName, widget.otherID);
+          await Player.destroyUnicorn(context, card, widget.roomName, widget.otherID, widget.myID);
 break;
         case CardClass.fine:
           await Player.destroyFine(card, widget.roomName, widget.otherID);
           break;
         case CardClass.baby:
-          await Player.destroyUnicorn(card, widget.roomName, widget.otherID);
+          await Player.destroyUnicorn(context, card, widget.roomName, widget.otherID, widget.myID);
 break;
 
         default:
@@ -80,11 +80,14 @@ break;
       backgroundColor: Colors.white,
       content: SizedBox(
         width: 110, //
-        child: ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: destroyCards?.length,
-          itemBuilder: (context, index) {
+        child: SingleChildScrollView(
+        child: Column(
+        children: List.generate(destroyCards?.length ?? 0, (index) {
+        // child: ListView.builder(
+        //   physics: const NeverScrollableScrollPhysics(),
+        //   shrinkWrap: true,
+        //   itemCount: destroyCards?.length,
+        //   itemBuilder: (context, index) {
             return Container(
               width: 110,
               margin: const EdgeInsets.all(5),
@@ -108,6 +111,10 @@ break;
           },
         ),
       ),
+          //add
+        ),
+      ),
+      //add
     );
   }
 }

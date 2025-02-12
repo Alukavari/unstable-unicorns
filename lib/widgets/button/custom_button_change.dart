@@ -39,9 +39,10 @@ class _ButtonChangeState extends State<ButtonChange> {
 
     print('мы на кнопке, должно быть либо 2,3 $count');
 
-    if (
-    Provider.of<ProgressCheckProvider>(context, listen: false).check == 0
-    ){
+    // внесли под скрипт проверку чек прогрессив
+    // if (
+    // Provider.of<ProgressCheckProvider>(context, listen: false).check == 0
+    // ){
     bool isEven = Provider.of<GameDataProvider>(context, listen: false).actCount >= 2
         ? true
         : false;
@@ -51,7 +52,7 @@ class _ButtonChangeState extends State<ButtonChange> {
         context,
         widget.roomName,
         'hand',
-        currentPlayer,
+        // currentPlayer,
         widget.myID,
         widget.otherID,
       );
@@ -64,11 +65,13 @@ class _ButtonChangeState extends State<ButtonChange> {
           titleForDialogWindow,
       );
     }
-  } else {
-      DialogWindow.show(context, 'Wait, your opponent has not yet implemented the card action',
-          titleForDialogWindow,
-      );
-    }
+
+    // убрали
+  // } else {
+  //     DialogWindow.show(context, 'Wait, your opponent has not yet implemented the card action',
+  //         titleForDialogWindow,
+  //     );
+  //   }
     }
 
   @override

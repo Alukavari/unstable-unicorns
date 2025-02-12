@@ -27,6 +27,7 @@ class Game {
     await FirebaseFirestore.instance.collection(roomName).doc('room').set({
       'players': [playerID1, playerID2],
       'gameStatus': 'waiting', // ожидание начала игры
+      'drawStatus': 'waiting', // ожидание начала игры
       'currentTurn': playerID1,
       'gameWin': '',
       'drawCard': [],
@@ -50,8 +51,8 @@ class Game {
       'playingCardOnTable': [],
     });
 
-    await roomRef2.collection('GameCardStatus').doc('state').set({
-      'gameCardStatus': 'nothing',
+    await roomRef2.collection('CardRemember').doc('state').set({
+      'cardRemember': [],
     });
 
     for (String playerID in players) {
@@ -126,6 +127,8 @@ class Game {
     });
   }
 
+
+
   static Future<String?> getGameStatus(String roomName) async {
     DocumentSnapshot snapshot =
         await FirebaseFirestore.instance.collection(roomName).doc('room').get();
@@ -140,38 +143,67 @@ class Game {
     }
   }
 
-  static Future<void> updateGameCardStatus(
-    String roomName,
-    String newStatus,
-  ) async {
-    final roomRef = FirebaseFirestore.instance
-        .collection(roomName)
-        .doc('room')
-        .collection('GameCardStatus')
-        .doc('state')
-        .update({
-      'gameCardStatus': newStatus,
+  static Future<String?> getDrawnStatus(String roomName) async {
+    DocumentSnapshot snapshot =
+        await FirebaseFirestore.instance.collection(roomName).doc('room').get();
+
+    if (snapshot.exists) {
+      Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
+
+      if (data != null && data.containsKey('drawStatus')) {
+        String gameStatus = data['drawStatus'] ?? '';
+        return gameStatus;
+      }
+    }
+    return null;
+  }
+
+  static Future<void> changeDrawnStatus(
+      String gameStatus,
+      String roomName,
+      ) async {
+    final roomRef =
+    FirebaseFirestore.instance.collection(roomName).doc('room').update({
+      'drawStatus': gameStatus,
+      'lastActive': FieldValue.serverTimestamp(),
     });
   }
 
-  static Future<String?> getGameCardStatus(
-    String roomName,
-  ) async {
-    final roomRef = await FirebaseFirestore.instance
-        .collection(roomName)
-        .doc('room')
-        .collection('GameCardStatus')
-        .doc('state')
-        .get();
-    if (roomRef.exists) {
-      Map<String, dynamic>? data = roomRef.data();
 
-      if (data != null && data.containsKey('gameCardStatus')) {
-        String gameCardStatus = data['gameCardStatus'] ?? '';
-        return gameCardStatus;
+  static Future<void> updateCardRemember(
+      String roomName, CardModel? cards) async {
+    Map<String, dynamic>? newCardMaps = cards?.toMap();
+
+    await FirebaseFirestore.instance.collection(roomName).doc('room').collection('CardRemember').doc('state').update({
+      'cardRemember': newCardMaps,
+    });
+    print('сейчас card for remember');
+  }
+
+  static Future<CardModel?> getCardRemember(String roomName) async {
+    DocumentSnapshot snapshot =
+    await FirebaseFirestore.instance.collection(roomName).doc('room').collection('CardRemember').doc('state').get();
+
+    if (snapshot.exists) {
+      Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
+
+      if (data != null && data.containsKey('cardRemember')) {
+        var drawCardData = data['cardRemember'];
+
+        if (drawCardData is Map<String, dynamic>) {
+          return CardModel.fromMap(drawCardData);
+        } else {
+          print('Разыгрываемая карта не имеет корректного формата');
+          return null; // Неверный формат данных
+        }
+      } else {
+        print('Поле cardRemember не найдено');
+        return null; // Поле не найдено
       }
     }
   }
+
+
 
   static Future<void> cleanActCount(
     String roomName,
@@ -414,64 +446,120 @@ class Game {
     return userEmail;
   }
 
+  static Future<String?> getPlayer(String roomName) async {
+    DocumentSnapshot snapshot =
+    await FirebaseFirestore.instance.collection(roomName).doc('player1').get();
+
+    if (snapshot.exists) {
+      Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
+
+      if (data != null && data.containsKey('playerID')) {
+        String gameStatus = data['playerID'] ?? '';
+        return gameStatus;
+      }
+    }
+  }
+
   static Future<void> checkCountCardOnHand(
     BuildContext context,
     String roomName,
     String typeDeck,
-    String currentPlayer,
     String myID,
     String otherID,
   ) async {
+    String? currentPlayer = Provider.of<CurrentPlayerState>(context, listen:false).currentPlayer;
+
     List<CardModel>? cardsOnHand = await PlayerState.getPlayerDeck(
       roomName,
       typeDeck,
       currentPlayer,
     );
-    List<CardModel>? bonuses = await PlayerState.getPlayerDeck(
-      roomName,
-      'effects',
-      currentPlayer,
-    );
 
-    int countCardsOnHand = cardsOnHand?.length ?? 0;
-    int difference = 0;
+    // List<CardModel>? bonuses = await PlayerState.getPlayerDeck(
+    //     roomName, 'bonuses', currentPlayer);
+    // List<CardModel>? fines = await PlayerState.getPlayerDeck(
+    //     roomName, 'fines', currentPlayer);
+    // List<CardModel>? effects = await PlayerState.getPlayerDeck(
+    //   roomName, 'effects', Provider
+    //     .of<CurrentPlayerState>(context, listen: false)
+    //     .currentPlayer,);
+    // bool isEvenSuck = fines?.any((card) => card.name == 'ОТСТОЙЛО') ?? false;
+    //
+    // bool isEvenJump = bonuses?.any((card) => card.name == 'ПРЫГ-СКОК') ?? false;
+    // print('есть ли карта ПРЫГ-СКОК $isEvenJump ');
+    // bool isEvenEffects = effects?.any((card) => card.name == 'ПРЫГ-СКОК') ?? false;
+    // print('есть ли карта in effects $isEvenEffects ');
 
-    if (Provider
-        .of<GameDataProvider>(context, listen: false)
-        .actCount == 0) {
-      return;
-    } else if (countCardsOnHand >= 0 &&
-        countCardsOnHand <= 7 && Provider
-        .of<ProgressCheckProvider>(context, listen: false)
-        .check == 0) {
-      await Game.checkVictoryConditions(
-        roomName,
-        currentPlayer,
-      );
-      await Game.nextPlayer(
-        roomName,
-        currentPlayer,
-        myID,
-        otherID,
-      );
-      await Game.cleanActCount(roomName);
-      await CheckPossibility.checkHaveMiniStall(context, roomName, myID);
+    bool isEvenJump = await CheckPossibility.checkHaveJump(context, roomName, currentPlayer);
+
+    if (isEvenJump) {
+      print('играем');
+
+      await PlayerState.updatePlayerDeck(roomName, [], 'effects', myID);
+
+      int countCardsOnHand = cardsOnHand?.length ?? 0;
+      int difference = 0;
+
+      if (Provider
+          .of<GameDataProvider>(context, listen: false)
+          .actCount == 0) {
+        return;
+      } else if (countCardsOnHand >= 0 &&
+          countCardsOnHand <= 7
+      ) {
+        print(' ProgressCheckProvider ${Provider
+            .of<ProgressCheckProvider>(context, listen: false).check}');
+        await Game.checkVictoryConditions(
+          roomName,
+          currentPlayer,
+        );
+        await Game.nextPlayer(
+          roomName,
+          currentPlayer,
+          myID,
+          otherID,
+        );
+        await Game.cleanActCount(roomName);
+        bool isEvenMiniStall = await CheckPossibility.checkHaveMiniStall(
+            context,
+            roomName,
+            // myID,
+            Provider
+                .of<CurrentPlayerState>(context, listen: false)
+                .currentPlayer,
+        );
+
+        if(isEvenMiniStall){
+          await Game.changeGameStatus('miniStall', roomName);
+        }
+      } else {
+        await Game.incrementActCount(roomName);
+
+        difference = countCardsOnHand - 7;
+        Provider.of<DiscardCardProvider>(context, listen: false)
+            .updateDiscardCard(difference);
+
+        await DialogWindow.show(
+          context,
+          'You have more than 7 cards in your hand, discard $difference and pass the turn',
+          titleForDialogWindow,
+        );
+      }
     } else {
-      await Game.incrementActCount(roomName);
-
-      difference = countCardsOnHand - 7;
-      Provider.of<DiscardCardProvider>(context, listen: false)
-          .updateDiscardCard(difference);
-
-      await DialogWindow.show(
-        context,
-        'You have more than 7 cards in your hand, discard $difference and pass the turn',
-        titleForDialogWindow,
-      );
+      print(' идем на 2 ход');
+      await Game.decreaseActCount(roomName);
+      List<CardModel>? bonuses = await PlayerState.getPlayerDeck(roomName, 'bonuses', currentPlayer);
+      CardModel? jump = bonuses?.firstWhere((card) => card.name == 'ПРЫГ-СКОК');
+        print('jump ${jump!.name} ');
+      await PlayerState.addCardPlayerDeck(roomName, jump!, 'effects', myID);
+      List<CardModel>? effects = await PlayerState.getPlayerDeck(
+          roomName, 'effects', myID);
+      print('сколько карт в эффектах после проверки${effects?.length}');
     }
   }
 
-  static Future<void> checkVictoryConditions(
+
+static Future<void> checkVictoryConditions(
     String roomName,
     currentPlayer,
   ) async {
@@ -552,7 +640,7 @@ class Game {
         playersRoom,
       );
     }
-
+//заклинания для текущего
     else if (gameStatus == 'playOutSpell'
         && myID ==
             Provider.of<CurrentPlayerState>(context, listen: false)
@@ -562,30 +650,60 @@ class Game {
       CardModel? card = await Game.getPlayOutCard(playersRoom);
         await CardModel.playOutSpell(context, playersRoom, card, myID, otherID);
 
-    }else if (gameStatus == 'playOutSpell'
+    }
+    //заклинания для нетекущего
+    else if (gameStatus == 'playOutSpell'
         && myID !=
             Provider.of<CurrentPlayerState>(context, listen: false)
-                .currentPlayer
-    ) {
+                .currentPlayer) {
       print('в статус гейм разыгрываем заклинание для не текущего игрока');
       CardModel? card = await Game.getPlayOutCard(playersRoom);
       await CardModel.playOutSpellForNoCurrentPlayer(context, playersRoom, card, myID, otherID);
 
-    } else if (gameStatus == 'playOutUnicorn' &&
-        myID != Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+    }
+    // единороги для текущего
+    else if (gameStatus == 'playOutUnicorn' &&
+        myID == Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+      print('разыгрываемая карта в статус для текущего игрока ${card?.name}');
 
+      //add
+      if (card!.type != CardClass.baby) {
+        await CardModel.playOutUnicorn(
+            context, playersRoom, card, myID, otherID);
+      }
+    }
+    else if (gameStatus == 'playOutUnicornExchange' &&
+        myID == Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+      print('разыгрываемая карта в статус для текущего игрока ${card?.name}');
+
+      //add
+      if (card!.type != CardClass.baby) {
+        print('мы на playOutUnicornExchange и это не бэйюи идм на play unicorn');
+        await CardModel.playOutUnicorn(
+            context, playersRoom, card, myID, otherID);
+      }
+    }
+
+    // единороги для не текущего
+    else if (gameStatus == 'playOutUnicorn' &&
+        myID != Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
       CardModel? card = await Game.getPlayOutCard(playersRoom);
       print('разыгрываемая карта в статус для нетекущего игркоа в единорожках ${card?.name}');
       await CardModel.playOutUnicornForNoCurrentPlayer(context, playersRoom, card, myID, otherID);
-
-    }else if (gameStatus == 'playOutUnicorn' &&
-        myID == Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
-
+//для обменов поцелуев
+    }else if (gameStatus == 'playOutUnicornNoCurrent' &&
+        myID != Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
       CardModel? card = await Game.getPlayOutCard(playersRoom);
-      print('разыгрываемая карта в статус для текущего игрока ${card?.name}');
-      await CardModel.playOutUnicorn(context, playersRoom, card, myID, otherID);
+      if (card!.type != CardClass.baby) {
+        print('для возобновления дейсвтий карты в стойле ${card?.name}');
+        await CardModel.playOutUnicorn(
+            context, playersRoom, card, myID, otherID);
+      }
     }
 
+    // бонусы для текущего
     else if (gameStatus == 'playOutBonuses' &&
         myID == Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
 
@@ -593,7 +711,42 @@ class Game {
       print('разыгрываемая карта в статус гейм ${card?.name}');
       await CardModel.playOutBonuses(context, playersRoom, card, myID, otherID);
 
+// единороги реакция
+    }else if (gameStatus == 'playOutUnicornForNoCurrentPlayer' &&
+        myID != Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
 
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+      print('разыгрываемая карта playOutUnicornForNoCurrentPlayer ${card?.name}');
+      await CardModel.playOutUnicornReaction(context, playersRoom, card, myID, otherID);
+
+//единороги реакция на жертву от текущего
+    }else if (gameStatus == 'playOutUnicornMyReaction' &&
+        myID == Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+      print('разыгрываемая карта playOutUnicornMyReaction ${card?.name}');
+      await CardModel.playOutUnicornMyReaction(context, playersRoom, card, myID, otherID);
+
+//реакция на уничтожение для не текущего
+    }else if (gameStatus == 'playOutUnicornReaction' &&
+        myID != Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+
+      CardModel? card = await Game.getPlayOutCard(playersRoom);
+      print('разыгрываемая карта playOutUnicornReaction ${card?.name}');
+      await CardModel.playOutUnicornReaction(context, playersRoom, card, myID, otherID);
+    }else if (gameStatus == 'fineWire' &&
+        myID != Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+      print('fineWire');
+      await CardModel.fineWire(context, playersRoom, myID, otherID);
+    }else if (gameStatus == 'fireWire' &&
+        myID == Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+      print('fireWire');
+      await CardModel.fineWire(context, playersRoom, myID, otherID);
+    }else if (gameStatus == 'miniStall' &&
+        myID == Provider.of<CurrentPlayerState>(context, listen: false).currentPlayer) {
+      print('miniStall');
+      await Game.changeGameStatus('inProcess', playersRoom);
+      await CardModel.finesMiniStall(context, playersRoom, myID, otherID);
     }
   }
 }

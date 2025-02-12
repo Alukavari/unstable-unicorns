@@ -263,8 +263,8 @@ class CheckPossibility {
     return true;
   }
 
-  static Future<void> checkHaveMiniStall(
-    BuildContext context,
+  static Future<bool> checkHaveMiniStall(
+      BuildContext context,
     String roomName,
     String myID,
   ) async {
@@ -280,36 +280,13 @@ class CheckPossibility {
     bool isEven1 = fines?.any((card)=> card.name == 'ПАНДЕЦ') ?? false;
 
     if(isEven && !isEven1){
-      List<CardModel>? stall = await PlayerState.getPlayerDeck(
-        roomName,
-        'stall',
-        currentPlayer,
-      );
-
-      bool isEven =  stall?.any((card)=> card.name =='ЖИРНОРОГ') ?? false;
-      int countCardsOnHand = stall?.length ?? 0;
-      if(isEven){
-        countCardsOnHand++;
-      }
-      int difference = 0;
-
-      if (countCardsOnHand > 5) {
-        await Game.incrementActCount(roomName);
-        await Game.incrementActCount(roomName);
-        await Game.incrementActCount(roomName);
-        difference = countCardsOnHand - 5;
-        Provider.of<DiscardCardProvider>(context, listen: false)
-            .updateDiscardCard(difference);
-
-        await DialogWindow.show(
-          context,
-          'You have more than 7 cards in your hand, discard $difference and pass the turn',
-          titleForDialogWindow,
-        );
-    } else {
-        await Game.cleanActCount(roomName);
-      }
+      print('mini stall yas');
+      return true;
+    } else{
+      print('mini stall no');
+      return false;
     }
+
   }
 
 
@@ -351,24 +328,71 @@ class CheckPossibility {
    return false;
   }
 
-
-  static Future<bool> checkHaveWire(
-    BuildContext context,
+  static Future<bool> checkHaveSuck(
     String roomName,
-    String myID,
+    String playerID,
   ) async {
-    String? currentPlayer =
-        Provider
-            .of<CurrentPlayerState>(context, listen: false)
-            .currentPlayer;
+
     List<CardModel>? fines = await PlayerState.getPlayerDeck(
       roomName,
       'fines',
-      currentPlayer,
+      playerID,
+    );
+    bool isEven = fines?.any((card)=> card.name == 'ОТСТОЙЛО') ?? false;
+    print('есть ли ОТСТОЙЛО $isEven');
+
+    if(!isEven){
+     return true;
+   }
+   return false;
+  }
+
+
+  static Future<bool> checkHaveWire(
+    String roomName,
+    String myID,
+  ) async {
+    List<CardModel>? fines = await PlayerState.getPlayerDeck(
+      roomName,
+      'fines',
+      // currentPlayer,
+        myID,
     );
 
     bool isEven = fines?.any((card) => card.name == 'КОЛЮЧАЯ ПРОВОЛКА') ??
         false;
     return isEven;
   }
-}
+
+  static Future<bool> checkHaveJump(
+      BuildContext context,
+    String roomName,
+    String currentPlayer,
+  ) async {
+
+    // если true то 1 ход если false то 2
+
+    List<CardModel>? bonuses = await PlayerState.getPlayerDeck(
+        roomName, 'bonuses', currentPlayer);
+    List<CardModel>? fines = await PlayerState.getPlayerDeck(
+        roomName, 'fines', currentPlayer);
+    List<CardModel>? effects = await PlayerState.getPlayerDeck(
+      roomName, 'effects', Provider
+        .of<CurrentPlayerState>(context, listen: false)
+        .currentPlayer,);
+    bool isEvenSuck = fines?.any((card) => card.name == 'ОТСТОЙЛО') ?? false;
+
+    bool isEvenJump = bonuses?.any((card) => card.name == 'ПРЫГ-СКОК') ?? false;
+    print('есть ли карта ПРЫГ-СКОК $isEvenJump ');
+    bool isEvenEffects = effects?.any((card) => card.name == 'ПРЫГ-СКОК') ?? false;
+    print('есть ли карта in effects $isEvenEffects ');
+
+    if (isEvenSuck || (!isEvenJump || isEvenEffects)) {
+      return true;
+    } else {
+      return false;
+    }
+    }
+
+    }
+

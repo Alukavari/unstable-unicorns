@@ -73,6 +73,7 @@ class ScrollWidgetBonuses extends StatelessWidget {
       isEven2 = await CheckPossibility.checkHaveUnicornForDestroy(
           context, roomName, otherID);
       print('$isEven1');
+      isEven3 = await CheckPossibility.checkHavePandec(roomName, otherID);
     } else if (newCard.name == 'ДИСКОБОМБА') {
       print('ДИСКОБОМБА');
       isEven1 = await CheckPossibility.checkHaveCardForSacrifice(roomName, myID);
@@ -97,7 +98,7 @@ class ScrollWidgetBonuses extends StatelessWidget {
               await DialogWindow.show(
                   context, checkText['ХВАТЬ-ХВАТЬ']!, titleForDialogWindow);
             } else
-            if (newCard.name == 'АРТАБСТОЙЛО' && (!isEven1 || !isEven2)) {
+            if (newCard.name == 'АРТАБСТОЙЛО' && (!isEven1 || !isEven2 || !isEven3)) {
               print('не могу разыграть АРТАБСТОЙЛО');
               await DialogWindow.show(
                   context, checkText['АРТАБСТОЙЛО']!, titleForDialogWindow);
@@ -116,15 +117,15 @@ class ScrollWidgetBonuses extends StatelessWidget {
               print('не могу разыграть КОФЕЙНЫЙ ДЕБОШ');
               await DialogWindow.show(
                   context, checkText['КОФЕЙНЫЙ ДЕБОШ']!, titleForDialogWindow);
+            } else {
+              print('сколько карт в эффектахдо добавления  ${effects.length}');
+
+              await PlayerState.addCardPlayerDeck(
+                  roomName, newCard, 'effects', myID);
+
+              await Game.updatePlayOutCard(roomName, newCard);
+              await Game.changeGameStatus('playOutBonuses', roomName);
             }
-            print('сколько карт в эффектахдо добавления  ${effects.length}');
-
-            await PlayerState.addCardPlayerDeck(
-                roomName, newCard, 'effects', myID);
-
-            print('сколько карт в эффектах после добаления ${effects.length}');
-            await Game.updatePlayOutCard(roomName, newCard);
-            await Game.changeGameStatus('playOutBonuses', roomName);
           } else {
             await DialogWindow.show(
                 context, checkText['bonuses']!, titleForDialogWindow);
@@ -169,7 +170,8 @@ class ScrollWidgetBonuses extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                color: Colors.white,
+                // color: Colors.white,
+                color: Colors.orangeAccent,
                 width: 80,
                 height: 30,
                 child: Center(child: Text(cards[index].name, style: textForFB, textAlign: TextAlign.center)),

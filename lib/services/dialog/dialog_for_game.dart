@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:unstable_unicorns/const/const.dart';
-import 'package:unstable_unicorns/widgets/scroll/scroll_for_game.dart';
 import '../../models/card.dart';
 
 class DialogForGame {
